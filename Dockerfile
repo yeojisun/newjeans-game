@@ -1,4 +1,4 @@
-FROM openjdk:17-jdk-slim
+FROM eclipse-temurin:17-jdk
 
 WORKDIR /app
 
@@ -8,7 +8,7 @@ COPY backend /app/backend
 # Compile the Java server
 RUN javac backend/Server.java
 
-# Expose port 8080 (the port our server listens on)
+# Expose port 8080
 EXPOSE 8080
 
 # Run the server
