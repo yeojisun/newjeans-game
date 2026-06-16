@@ -66,7 +66,7 @@ onMounted(async () => {
 const fetchLeaderboard = async () => {
   try {
     leaderboardError.value = '';
-    const res = await fetch('http://localhost:8080/api/scores');
+    const res = await fetch('https://newjeans-backend.onrender.com/api/scores');
     if (!res.ok) throw new Error();
     const data = await res.json();
     leaderboard.value = data;
@@ -143,7 +143,7 @@ const submitScore = async () => {
   isSubmittingScore.value = true;
 
   try {
-    const response = await fetch('http://localhost:8080/api/scores', {
+    const response = await fetch('https://newjeans-backend.onrender.com/api/scores', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
