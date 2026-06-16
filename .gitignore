@@ -9,6 +9,7 @@ frontend/dist/
 backend/*.class
 
 # Local database / state files
+scores.json
 backend/scores.json
 
 # IDEs & System files
