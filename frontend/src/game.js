@@ -48,7 +48,8 @@ export class GameEngine {
       isSkillActive: false,
       hasShield: false,
       shieldHp: 0,
-      bounceScale: 1.0 // Juicy scale multiplier when eating items
+      bounceScale: 1.0, // Juicy scale multiplier when eating items
+      attackTimer: 0
     };
 
     // Keep aspect ratio of the extracted character sprite
@@ -184,6 +185,7 @@ export class GameEngine {
     this.player.isSkillActive = false;
     this.player.activeSkillTimer = 0;
     this.player.hasShield = false;
+    this.player.attackTimer = 0;
 
     this.projectiles = [];
     this.collectibles = [];
@@ -210,6 +212,8 @@ export class GameEngine {
 
   shoot() {
     if (!this.isPlaying || this.shootCooldown > 0) return;
+
+    this.player.attackTimer = 10; // Show attack sprite for ~160ms (10 frames)
 
     // Double fire for Hanni or Danielle during skill
     const projectileCount = (this.character.id === 'hanni' && this.player.isSkillActive) ? 3 : 1;
@@ -320,6 +324,9 @@ export class GameEngine {
 
   update(dt) {
     this.shootCooldown = Math.max(0, this.shootCooldown - dt);
+    if (this.player.attackTimer > 0) {
+      this.player.attackTimer = Math.max(0, this.player.attackTimer - dt);
+    }
     this.distance += (this.player.isSkillActive && this.character.id === 'hanni' ? 12 : 4) * dt * this.timeScale;
 
     // 1. Shake & Bounce Handlers
@@ -1045,7 +1052,12 @@ export class GameEngine {
       
       // Draw actual custom cropped character canvas
       if (this.character && this.character.canvas) {
-        const spriteCanvas = (this.player.isSkillActive && this.character.cheerCanvas) ? this.character.cheerCanvas : this.character.canvas;
+        let spriteCanvas = this.character.canvas;
+        if (this.player.attackTimer > 0 && this.character.attackCanvas) {
+          spriteCanvas = this.character.attackCanvas;
+        } else if (this.player.isSkillActive && this.character.cheerCanvas) {
+          spriteCanvas = this.character.cheerCanvas;
+        }
         this.ctx.drawImage(
           spriteCanvas,
           -this.player.width / 2,

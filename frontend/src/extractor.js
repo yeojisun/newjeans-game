@@ -16,6 +16,12 @@ import cheerHaerin from './assets/cheer_haerin.png';
 import cheerMinji from './assets/cheer_minji.png';
 import cheerHyein from './assets/cheer_hyein.png';
 
+import attackHanni from './assets/attack_hanni.png';
+import attackDanielle from './assets/attack_danielle.png';
+import attackHaerin from './assets/attack_haerin.png';
+import attackMinji from './assets/attack_minji.png';
+import attackHyein from './assets/attack_hyein.png';
+
 const CHARACTERS_META = [
   {
     id: 'hanni',
@@ -25,7 +31,8 @@ const CHARACTERS_META = [
     skillName: 'Hype Dash',
     skillDesc: '순식간에 대시하며 일시적 무적 상태가 됩니다. (방향키/드래그 더블 탭)',
     src: spriteHanni,
-    cheerSrc: cheerHanni
+    cheerSrc: cheerHanni,
+    attackSrc: attackHanni
   },
   {
     id: 'danielle',
@@ -35,7 +42,8 @@ const CHARACTERS_META = [
     skillName: 'Butterfly Score',
     skillDesc: '점수 획득량이 2배로 증가하고 나비가 날아와 골드를 추가 획득합니다.',
     src: spriteDanielle,
-    cheerSrc: cheerDanielle
+    cheerSrc: cheerDanielle,
+    attackSrc: attackDanielle
   },
   {
     id: 'haerin',
@@ -45,7 +53,8 @@ const CHARACTERS_META = [
     skillName: 'Tokki Magnet',
     skillDesc: '강력한 자석 효과로 화면 안의 모든 아이템(토끼, CD)을 끌어당깁니다.',
     src: spriteHaerin,
-    cheerSrc: cheerHaerin
+    cheerSrc: cheerHaerin,
+    attackSrc: attackHaerin
   },
   {
     id: 'minji',
@@ -55,7 +64,8 @@ const CHARACTERS_META = [
     skillName: 'CD Shield',
     skillDesc: '장애물 충돌을 1회 막아주는 회전하는 CD 보호막을 생성합니다.',
     src: spriteMinji,
-    cheerSrc: cheerMinji
+    cheerSrc: cheerMinji,
+    attackSrc: attackMinji
   },
   {
     id: 'hyein',
@@ -65,7 +75,8 @@ const CHARACTERS_META = [
     skillName: 'Super Slow-Mo',
     skillDesc: '주변 장애물과 스크롤 속도를 느리게 만들어 쉽게 회피할 수 있게 합니다.',
     src: spriteHyein,
-    cheerSrc: cheerHyein
+    cheerSrc: cheerHyein,
+    attackSrc: attackHyein
   }
 ];
 
@@ -178,8 +189,9 @@ function processSingleCanvas(src, color) {
 function processCharacterSprite(char) {
   return Promise.all([
     processSingleCanvas(char.src, char.color),
-    processSingleCanvas(char.cheerSrc, char.color)
-  ]).then(([defaultSprite, cheerSprite]) => {
+    processSingleCanvas(char.cheerSrc, char.color),
+    processSingleCanvas(char.attackSrc, char.color)
+  ]).then(([defaultSprite, cheerSprite, attackSprite]) => {
     return {
       id: char.id,
       name: char.name,
@@ -196,7 +208,12 @@ function processCharacterSprite(char) {
       cheerCanvas: cheerSprite.canvas,
       cheerDataUrl: cheerSprite.dataUrl,
       cheerWidth: cheerSprite.width,
-      cheerHeight: cheerSprite.height
+      cheerHeight: cheerSprite.height,
+      // Attack Sprite
+      attackCanvas: attackSprite.canvas,
+      attackDataUrl: attackSprite.dataUrl,
+      attackWidth: attackSprite.width,
+      attackHeight: attackSprite.height
     };
   });
 }
