@@ -158,6 +158,7 @@ function processCharacterSprite(char) {
         skillName: char.skillName,
         skillDesc: char.skillDesc,
         canvas: polishedCanvas,
+        dataUrl: polishedCanvas.toDataURL(),
         width: polishedCanvas.width,
         height: polishedCanvas.height
       });
