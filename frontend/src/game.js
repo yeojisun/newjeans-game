@@ -49,7 +49,8 @@ export class GameEngine {
       hasShield: false,
       shieldHp: 0,
       bounceScale: 1.0, // Juicy scale multiplier when eating items
-      attackTimer: 0
+      attackTimer: 0,
+      eatTimer: 0
     };
 
     // Keep aspect ratio of the extracted character sprite
@@ -186,6 +187,7 @@ export class GameEngine {
     this.player.activeSkillTimer = 0;
     this.player.hasShield = false;
     this.player.attackTimer = 0;
+    this.player.eatTimer = 0;
 
     this.projectiles = [];
     this.collectibles = [];
@@ -326,6 +328,9 @@ export class GameEngine {
     this.shootCooldown = Math.max(0, this.shootCooldown - dt);
     if (this.player.attackTimer > 0) {
       this.player.attackTimer = Math.max(0, this.player.attackTimer - dt);
+    }
+    if (this.player.eatTimer > 0) {
+      this.player.eatTimer = Math.max(0, this.player.eatTimer - dt);
     }
     this.distance += (this.player.isSkillActive && this.character.id === 'hanni' ? 12 : 4) * dt * this.timeScale;
 
@@ -604,6 +609,7 @@ export class GameEngine {
 
     // Trigger juicy squeeze animation
     this.player.bounceScale = 1.35;
+    this.player.eatTimer = 15; // Show eating/cheering face for 15 frames (~250ms)
 
     let points = 100;
     let gaugeIncrease = 5;
@@ -1055,6 +1061,8 @@ export class GameEngine {
         let spriteCanvas = this.character.canvas;
         if (this.player.attackTimer > 0 && this.character.attackCanvas) {
           spriteCanvas = this.character.attackCanvas;
+        } else if (this.player.eatTimer > 0 && this.character.cheerCanvas) {
+          spriteCanvas = this.character.cheerCanvas;
         } else if (this.player.isSkillActive && this.character.cheerCanvas) {
           spriteCanvas = this.character.cheerCanvas;
         }
