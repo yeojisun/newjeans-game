@@ -258,7 +258,7 @@ const toggleMute = () => {
                   </div>
                 </transition>
                 <img 
-                  :src="selectedCharacter.dataUrl" 
+                  :src="isYahooActive ? selectedCharacter.cheerDataUrl : selectedCharacter.dataUrl" 
                   class="preview-sprite-img"
                   :class="{ yahoo: isYahooActive }"
                   :style="{ '--char-color': selectedCharacter.color }"

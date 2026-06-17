@@ -1045,8 +1045,9 @@ export class GameEngine {
       
       // Draw actual custom cropped character canvas
       if (this.character && this.character.canvas) {
+        const spriteCanvas = (this.player.isSkillActive && this.character.cheerCanvas) ? this.character.cheerCanvas : this.character.canvas;
         this.ctx.drawImage(
-          this.character.canvas,
+          spriteCanvas,
           -this.player.width / 2,
           -this.player.height / 2,
           this.player.width,

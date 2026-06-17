@@ -1,6 +1,6 @@
 /**
  * NewJeans Character Extractor (Pre-separated High Quality Sprites version)
- * Imports 5 separate digital vector drawings, transparentizes the white background,
+ * Imports 5 regular and 5 cheering digital vector drawings, transparentizes the white background,
  * auto-trims empty margins to prevent hitbox misalignment, and adds a glowing shadow.
  */
 
@@ -10,6 +10,12 @@ import spriteHaerin from './assets/sprite_haerin.png';
 import spriteMinji from './assets/sprite_minji.png';
 import spriteHyein from './assets/sprite_hyein.png';
 
+import cheerHanni from './assets/cheer_hanni.png';
+import cheerDanielle from './assets/cheer_danielle.png';
+import cheerHaerin from './assets/cheer_haerin.png';
+import cheerMinji from './assets/cheer_minji.png';
+import cheerHyein from './assets/cheer_hyein.png';
+
 const CHARACTERS_META = [
   {
     id: 'hanni',
@@ -18,7 +24,8 @@ const CHARACTERS_META = [
     role: 'Vocal',
     skillName: 'Hype Dash',
     skillDesc: '순식간에 대시하며 일시적 무적 상태가 됩니다. (방향키/드래그 더블 탭)',
-    src: spriteHanni
+    src: spriteHanni,
+    cheerSrc: cheerHanni
   },
   {
     id: 'danielle',
@@ -27,7 +34,8 @@ const CHARACTERS_META = [
     role: 'Sunshine',
     skillName: 'Butterfly Score',
     skillDesc: '점수 획득량이 2배로 증가하고 나비가 날아와 골드를 추가 획득합니다.',
-    src: spriteDanielle
+    src: spriteDanielle,
+    cheerSrc: cheerDanielle
   },
   {
     id: 'haerin',
@@ -36,7 +44,8 @@ const CHARACTERS_META = [
     role: 'Kitty',
     skillName: 'Tokki Magnet',
     skillDesc: '강력한 자석 효과로 화면 안의 모든 아이템(토끼, CD)을 끌어당깁니다.',
-    src: spriteHaerin
+    src: spriteHaerin,
+    cheerSrc: cheerHaerin
   },
   {
     id: 'minji',
@@ -45,7 +54,8 @@ const CHARACTERS_META = [
     role: 'Leader',
     skillName: 'CD Shield',
     skillDesc: '장애물 충돌을 1회 막아주는 회전하는 CD 보호막을 생성합니다.',
-    src: spriteMinji
+    src: spriteMinji,
+    cheerSrc: cheerMinji
   },
   {
     id: 'hyein',
@@ -54,15 +64,16 @@ const CHARACTERS_META = [
     role: 'Maknae',
     skillName: 'Super Slow-Mo',
     skillDesc: '주변 장애물과 스크롤 속도를 느리게 만들어 쉽게 회피할 수 있게 합니다.',
-    src: spriteHyein
+    src: spriteHyein,
+    cheerSrc: cheerHyein
   }
 ];
 
-// Process a single image: make background transparent and trim empty borders
-function processCharacterSprite(char) {
+// Process a single image path: load, transparentize, trim, add shadow, return canvas & dataUrl
+function processSingleCanvas(src, color) {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.src = char.src;
+    img.src = src;
 
     img.onload = () => {
       const w = img.naturalWidth;
@@ -146,17 +157,11 @@ function processCharacterSprite(char) {
       polishedCanvas.height = cropH + padding * 2;
       const polishedCtx = polishedCanvas.getContext('2d');
 
-      polishedCtx.shadowColor = char.color;
+      polishedCtx.shadowColor = color;
       polishedCtx.shadowBlur = 8;
       polishedCtx.drawImage(trimmedCanvas, padding, padding);
 
       resolve({
-        id: char.id,
-        name: char.name,
-        color: char.color,
-        role: char.role,
-        skillName: char.skillName,
-        skillDesc: char.skillDesc,
         canvas: polishedCanvas,
         dataUrl: polishedCanvas.toDataURL(),
         width: polishedCanvas.width,
@@ -165,7 +170,33 @@ function processCharacterSprite(char) {
     };
 
     img.onerror = (err) => {
-      reject(new Error(`${char.name} 이미지 파일 로드에 실패했습니다.`));
+      reject(new Error(`이미지 파일 로드에 실패했습니다: ${src}`));
+    };
+  });
+}
+
+function processCharacterSprite(char) {
+  return Promise.all([
+    processSingleCanvas(char.src, char.color),
+    processSingleCanvas(char.cheerSrc, char.color)
+  ]).then(([defaultSprite, cheerSprite]) => {
+    return {
+      id: char.id,
+      name: char.name,
+      color: char.color,
+      role: char.role,
+      skillName: char.skillName,
+      skillDesc: char.skillDesc,
+      // Default Sprite
+      canvas: defaultSprite.canvas,
+      dataUrl: defaultSprite.dataUrl,
+      width: defaultSprite.width,
+      height: defaultSprite.height,
+      // Cheering Sprite
+      cheerCanvas: cheerSprite.canvas,
+      cheerDataUrl: cheerSprite.dataUrl,
+      cheerWidth: cheerSprite.width,
+      cheerHeight: cheerSprite.height
     };
   });
 }
