@@ -336,7 +336,7 @@ const toggleMute = () => {
           <span class="hud-label">SKILL:</span>
           <div class="gauge-bar" :class="{ ready: skillGauge >= 100 }" @click="triggerSkill">
             <div class="gauge-fill" :style="{ width: skillGauge + '%', backgroundColor: selectedCharacter.color }"></div>
-            <div class="gauge-text">{{ skillGauge >= 100 ? 'SKILL READY [E / CLICK]' : skillGauge + '%' }}</div>
+            <div class="gauge-text">{{ skillGauge >= 100 ? 'SKILL READY [E / TAP]' : skillGauge + '%' }}</div>
           </div>
         </div>
       </div>
@@ -885,8 +885,9 @@ body {
 /* GAMEPLAY HUDS */
 .gameplay-container {
   position: relative;
-  width: 960px;
-  height: 540px;
+  width: 100%;
+  max-width: 960px;
+  aspect-ratio: 16 / 9;
   background-color: #020205;
   border: 4px solid var(--neon-pink);
   border-radius: 20px;
@@ -1115,5 +1116,131 @@ body {
 .star-deco {
   color: var(--neon-pink);
   margin: 0 4px;
+}
+
+/* Mobile Responsive Design */
+@media (max-width: 768px) {
+  .app-container {
+    height: auto;
+    min-height: 100vh;
+    overflow-y: auto;
+    padding: 10px;
+    align-items: flex-start;
+  }
+  
+  .menu-layout {
+    height: auto;
+    padding: 10px 0;
+  }
+  
+  .retro-logo {
+    font-size: 2.2rem;
+  }
+  
+  .sub-logo {
+    font-size: 0.95rem;
+    letter-spacing: 3px;
+  }
+  
+  .grid-container {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: auto;
+    gap: 15px;
+  }
+  
+  .character-avatars {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 5px;
+  }
+  
+  .avatar-card {
+    padding: 8px 3px;
+  }
+  
+  .avatar-canvas-wrapper {
+    width: 45px;
+    height: 45px;
+  }
+  
+  .stat-detail-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  
+  .character-preview-pane {
+    height: 100px;
+    order: -1;
+  }
+  
+  .preview-sprite-img {
+    height: 90px;
+  }
+  
+  .leaderboard-panel {
+    margin-top: 10px;
+  }
+  
+  .gameplay-container {
+    border-radius: 12px;
+    border-width: 3px;
+  }
+  
+  .hud-overlay {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    gap: 5px;
+  }
+  
+  .hud-item {
+    padding: 4px 8px;
+    font-size: 0.65rem;
+    border-radius: 8px;
+  }
+  
+  .hearts {
+    font-size: 0.85rem;
+  }
+  
+  .gauge-bar {
+    width: 100px;
+    height: 18px;
+  }
+  
+  .gauge-text {
+    font-size: 0.45rem;
+  }
+  
+  .instruction-hud {
+    font-size: 0.6rem;
+    padding: 2px 10px;
+    bottom: 5px;
+  }
+  
+  .skill-banner {
+    font-size: 0.85rem;
+    padding: 4px 15px;
+    top: 45px;
+  }
+}
+
+@media (max-width: 480px) {
+  .retro-logo {
+    font-size: 1.8rem;
+  }
+  
+  .sub-logo {
+    font-size: 0.8rem;
+  }
+  
+  .panel-title {
+    font-size: 0.95rem;
+    margin-bottom: 12px;
+  }
+  
+  .avatar-name {
+    font-size: 0.65rem;
+  }
 }
 </style>

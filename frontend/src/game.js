@@ -337,6 +337,12 @@ export class GameEngine {
     if (this.player.hitAnimTimer > 0) {
       this.player.hitAnimTimer = Math.max(0, this.player.hitAnimTimer - dt);
     }
+
+    // Auto-shoot when holding down/touching in mouse/touch control mode
+    if (this.mouse.isDown && this.controlMode === 'mouse') {
+      this.shoot();
+    }
+
     this.distance += (this.player.isSkillActive && this.character.id === 'hanni' ? 12 : 4) * dt * this.timeScale;
 
     // 1. Shake & Bounce Handlers
