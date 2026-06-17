@@ -40,7 +40,7 @@ export class GameEngine {
     this.stage = 1;
     this.maxStages = 5;
     this.stageDistance = 0;
-    this.maxStageDistance = 1500; // 1500 meters of running before boss
+    this.maxStageDistance = 4500; // 4500 meters of running before boss
     this.stageClearTimer = 0;
     
     this.boss = {
