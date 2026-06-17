@@ -882,28 +882,125 @@ export class GameEngine {
       this.ctx.rotate(rotation);
 
       if (item.type === 'bunny') {
-        // Cute Y2K Bunny Outline / Drawing
-        this.ctx.fillStyle = '#ff71ce';
-        this.ctx.shadowColor = '#ff71ce';
-        this.ctx.shadowBlur = 10;
+        // Powerpuff Girls style Tokki (Bunny)
+        this.ctx.shadowColor = 'rgba(125, 211, 252, 0.4)';
+        this.ctx.shadowBlur = 8;
+
+        // 1. Limbs (Arms & Legs)
+        this.ctx.fillStyle = '#e2f3fc'; // Pastel light blue/white body
         
-        // Head
+        // Left Arm
         this.ctx.beginPath();
-        this.ctx.arc(0, 0, 10, 0, Math.PI * 2);
+        this.ctx.ellipse(-12, 3, 3, 6, -Math.PI / 4, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        // Right Arm
+        this.ctx.beginPath();
+        this.ctx.ellipse(12, 3, 3, 6, Math.PI / 4, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        // Left Leg
+        this.ctx.beginPath();
+        this.ctx.ellipse(-5, 12, 3, 5, -Math.PI / 12, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        // Right Leg
+        this.ctx.beginPath();
+        this.ctx.ellipse(5, 12, 3, 5, Math.PI / 12, 0, Math.PI * 2);
         this.ctx.fill();
 
-        // Ears
+        // 2. Ears
         this.ctx.beginPath();
-        this.ctx.ellipse(-5, -12, 4, 10, -Math.PI / 12, 0, Math.PI * 2);
-        this.ctx.ellipse(5, -12, 4, 10, Math.PI / 12, 0, Math.PI * 2);
+        this.ctx.ellipse(-5, -13, 4, 14, -Math.PI / 10, 0, Math.PI * 2);
         this.ctx.fill();
 
-        // Face details
-        this.ctx.fillStyle = '#ffffff';
         this.ctx.beginPath();
-        this.ctx.arc(-3, -2, 1.5, 0, Math.PI * 2);
-        this.ctx.arc(3, -2, 1.5, 0, Math.PI * 2);
+        this.ctx.ellipse(5, -13, 4, 14, Math.PI / 10, 0, Math.PI * 2);
         this.ctx.fill();
+
+        // 3. Head
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, 13, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // 4. Eyes (Outer light-blue ring & Black pupils)
+        this.ctx.strokeStyle = '#38bdf8';
+        this.ctx.lineWidth = 1.5;
+        
+        // Left Eye
+        this.ctx.fillStyle = '#000000';
+        this.ctx.beginPath();
+        this.ctx.arc(-6, -1, 5, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Right Eye
+        this.ctx.beginPath();
+        this.ctx.arc(6, -1, 5, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Helper to draw heart pupils
+        const drawHeart = (ctx, hx, hy, size) => {
+          ctx.save();
+          ctx.translate(hx, hy);
+          ctx.beginPath();
+          ctx.moveTo(0, size * 0.35);
+          ctx.bezierCurveTo(-size * 0.5, -size * 0.1, -size * 0.5, -size * 0.7, 0, -size * 0.35);
+          ctx.bezierCurveTo(size * 0.5, -size * 0.7, size * 0.5, -size * 0.1, 0, size * 0.35);
+          ctx.fillStyle = '#ffffff';
+          ctx.fill();
+          ctx.restore();
+        };
+
+        // 5. Draw Heart Pupils
+        drawHeart(this.ctx, -6, -1, 4.5);
+        drawHeart(this.ctx, 6, -1, 4.5);
+
+        // 6. Nose
+        this.ctx.fillStyle = '#f472b6'; // Pastel pink nose
+        this.ctx.beginPath();
+        this.ctx.arc(0, 3, 1.8, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // 7. Mouth (Happy open smile)
+        this.ctx.fillStyle = '#000000';
+        this.ctx.beginPath();
+        this.ctx.arc(0, 6, 2.5, 0, Math.PI); // crescent mouth
+        this.ctx.fill();
+
+        // Tongue (pink inside mouth)
+        this.ctx.save();
+        this.ctx.beginPath();
+        this.ctx.arc(0, 6, 2.5, 0, Math.PI);
+        this.ctx.clip();
+        this.ctx.fillStyle = '#f472b6';
+        this.ctx.beginPath();
+        this.ctx.arc(0, 8, 2, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.restore();
+
+        // 8. Whiskers
+        this.ctx.strokeStyle = '#000000';
+        this.ctx.lineWidth = 0.8;
+        
+        // Left Whiskers
+        this.ctx.beginPath();
+        this.ctx.moveTo(-11, 4);
+        this.ctx.lineTo(-15, 3.5);
+        this.ctx.moveTo(-11, 6);
+        this.ctx.lineTo(-15.5, 6.5);
+        this.ctx.stroke();
+
+        // Right Whiskers
+        this.ctx.beginPath();
+        this.ctx.moveTo(11, 4);
+        this.ctx.lineTo(15, 3.5);
+        this.ctx.moveTo(11, 6);
+        this.ctx.lineTo(15.5, 6.5);
+        this.ctx.stroke();
+
+        this.ctx.shadowBlur = 0; // reset
       } else if (item.type === 'cd') {
         // Holographic Vinyl CD
         this.ctx.lineWidth = 4;
