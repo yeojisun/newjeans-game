@@ -1444,7 +1444,9 @@ export class GameEngine {
       // Draw actual custom cropped character canvas
       if (this.character && this.character.canvas) {
         let spriteCanvas = this.character.canvas;
-        if (this.player.attackTimer > 0 && this.character.attackCanvas) {
+        if (this.player.hitAnimTimer > 0 && this.character.hitCanvas) {
+          spriteCanvas = this.character.hitCanvas;
+        } else if (this.player.attackTimer > 0 && this.character.attackCanvas) {
           spriteCanvas = this.character.attackCanvas;
         } else if (this.player.eatTimer > 0 && this.character.cheerCanvas) {
           spriteCanvas = this.character.cheerCanvas;

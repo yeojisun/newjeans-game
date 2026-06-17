@@ -22,6 +22,8 @@ import attackHaerin from './assets/attack_haerin.png';
 import attackMinji from './assets/attack_minji.png';
 import attackHyein from './assets/attack_hyein.png';
 
+import hitHaerin from './assets/hit_haerin.png';
+
 const CHARACTERS_META = [
   {
     id: 'hanni',
@@ -54,7 +56,8 @@ const CHARACTERS_META = [
     skillDesc: '강력한 자석 효과로 화면 안의 모든 아이템(토끼, CD)을 끌어당깁니다.',
     src: spriteHaerin,
     cheerSrc: cheerHaerin,
-    attackSrc: attackHaerin
+    attackSrc: attackHaerin,
+    hitSrc: hitHaerin
   },
   {
     id: 'minji',
@@ -187,11 +190,18 @@ function processSingleCanvas(src, color) {
 }
 
 function processCharacterSprite(char) {
-  return Promise.all([
+  const promises = [
     processSingleCanvas(char.src, char.color),
     processSingleCanvas(char.cheerSrc, char.color),
     processSingleCanvas(char.attackSrc, char.color)
-  ]).then(([defaultSprite, cheerSprite, attackSprite]) => {
+  ];
+  if (char.hitSrc) {
+    promises.push(processSingleCanvas(char.hitSrc, char.color));
+  } else {
+    promises.push(Promise.resolve(null));
+  }
+
+  return Promise.all(promises).then(([defaultSprite, cheerSprite, attackSprite, hitSprite]) => {
     return {
       id: char.id,
       name: char.name,
@@ -213,7 +223,10 @@ function processCharacterSprite(char) {
       attackCanvas: attackSprite.canvas,
       attackDataUrl: attackSprite.dataUrl,
       attackWidth: attackSprite.width,
-      attackHeight: attackSprite.height
+      attackHeight: attackSprite.height,
+      // Hit Sprite
+      hitCanvas: hitSprite ? hitSprite.canvas : null,
+      hitDataUrl: hitSprite ? hitSprite.dataUrl : null
     };
   });
 }
