@@ -72,15 +72,9 @@ const fetchLeaderboard = async () => {
     leaderboard.value = data;
   } catch (err) {
     console.warn('Java Server offline. Using fallback rankings.');
-    leaderboardError.value = '서버가 오프라인 상태입니다. 로컬 랭킹을 표시합니다.';
-    // Fallback static rankings
-    leaderboard.value = [
-      { name: 'MINJI', score: 1500, character: 'Minji' },
-      { name: 'HANNI', score: 1400, character: 'Hanni' },
-      { name: 'HAERIN', score: 1300, character: 'Haerin' },
-      { name: 'DANIELLE', score: 1200, character: 'Danielle' },
-      { name: 'HYEIN', score: 1100, character: 'Hyein' }
-    ];
+    leaderboardError.value = '서버가 오프라인 상태입니다.';
+    // Fallback static rankings (empty since fixed entries are removed)
+    leaderboard.value = [];
   }
 };
 
@@ -282,7 +276,11 @@ const toggleMute = () => {
           <div v-if="leaderboardError" class="error-badge">{{ leaderboardError }}</div>
 
           <div class="table-container">
-            <table class="ranking-table">
+            <div v-if="leaderboard.length === 0" class="no-rankings-box">
+              <div><span class="star-deco">★</span> 등록된 랭킹 기록이 없습니다. <span class="star-deco">★</span></div>
+              <p class="no-rankings-sub">첫 번째 명예의 전당 주인공이 되어보세요!</p>
+            </div>
+            <table v-else class="ranking-table">
               <thead>
                 <tr>
                   <th>RANK</th>
@@ -1091,5 +1089,31 @@ body {
 .cancel-btn:hover {
   background: rgba(255,255,255,0.05);
   color: #fff;
+}
+
+.no-rankings-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 10px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.15);
+  margin-top: 10px;
+}
+.no-rankings-sub {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin: 8px 0 0 0;
+  font-weight: 500;
+}
+.star-deco {
+  color: var(--neon-pink);
+  margin: 0 4px;
 }
 </style>

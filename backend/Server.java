@@ -24,13 +24,7 @@ public class Server {
     private static final String FILE_PATH = "scores.json";
     private static final Object fileLock = new Object();
 
-    private static final String DEFAULT_SCORES = "[" +
-        "{\"name\":\"MINJI\",\"score\":1500,\"character\":\"Minji\"}," +
-        "{\"name\":\"HANNI\",\"score\":1400,\"character\":\"Hanni\"}," +
-        "{\"name\":\"HAERIN\",\"score\":1300,\"character\":\"Haerin\"}," +
-        "{\"name\":\"DANIELLE\",\"score\":1200,\"character\":\"Danielle\"}," +
-        "{\"name\":\"HYEIN\",\"score\":1100,\"character\":\"Hyein\"}" +
-        "]";
+    private static final String DEFAULT_SCORES = "[]";
 
     public static void main(String[] args) throws IOException {
         // Initialize scores file if it doesn't exist
