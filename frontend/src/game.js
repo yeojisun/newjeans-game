@@ -1066,12 +1066,18 @@ export class GameEngine {
         } else if (this.player.isSkillActive && this.character.cheerCanvas) {
           spriteCanvas = this.character.cheerCanvas;
         }
+
+        // Dynamically compute width to preserve the active sprite's aspect ratio
+        const currentRatio = spriteCanvas.width / spriteCanvas.height;
+        const drawHeight = 65;
+        const drawWidth = 65 * currentRatio;
+
         this.ctx.drawImage(
           spriteCanvas,
-          -this.player.width / 2,
-          -this.player.height / 2,
-          this.player.width,
-          this.player.height
+          -drawWidth / 2,
+          -drawHeight / 2,
+          drawWidth,
+          drawHeight
         );
       } else {
         // Fallback: draw placeholder cube
