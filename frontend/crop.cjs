@@ -105,8 +105,8 @@ async function cropAll() {
   await standing.write(path.join(destDir, 'sprite_haerin.png'));
   console.log('Saved sprite_haerin.png');
 
-  console.log('Cropping cheer sprite...');
-  const cheer = image.clone().crop({ x: cheerBox.x, y: cheerBox.y, w: cheerBox.w, h: cheerBox.h });
+  console.log('Loading individual cheer sprite...');
+  const cheer = await Jimp.read('C:/Users/jisun.yeo/.gemini/antigravity/brain/71e6e127-5b58-4134-b553-f1a41d12ff3e/media__1781684176865.png');
   removeBackgroundDirect(cheer);
   await cheer.write(path.join(destDir, 'cheer_haerin.png'));
   console.log('Saved cheer_haerin.png');
