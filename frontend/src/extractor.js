@@ -62,7 +62,6 @@ const CHARACTERS_META = [
 function processCharacterSprite(char) {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
     img.src = char.src;
 
     img.onload = () => {
