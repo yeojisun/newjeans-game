@@ -50,7 +50,8 @@ export class GameEngine {
       shieldHp: 0,
       bounceScale: 1.0, // Juicy scale multiplier when eating items
       attackTimer: 0,
-      eatTimer: 0
+      eatTimer: 0,
+      hitAnimTimer: 0
     };
 
     // Keep aspect ratio of the extracted character sprite
@@ -188,6 +189,7 @@ export class GameEngine {
     this.player.hasShield = false;
     this.player.attackTimer = 0;
     this.player.eatTimer = 0;
+    this.player.hitAnimTimer = 0;
 
     this.projectiles = [];
     this.collectibles = [];
@@ -331,6 +333,9 @@ export class GameEngine {
     }
     if (this.player.eatTimer > 0) {
       this.player.eatTimer = Math.max(0, this.player.eatTimer - dt);
+    }
+    if (this.player.hitAnimTimer > 0) {
+      this.player.hitAnimTimer = Math.max(0, this.player.hitAnimTimer - dt);
     }
     this.distance += (this.player.isSkillActive && this.character.id === 'hanni' ? 12 : 4) * dt * this.timeScale;
 
@@ -708,6 +713,7 @@ export class GameEngine {
 
     // Damage player
     this.player.hp -= 1;
+    this.player.hitAnimTimer = 35; // Collision animation timer (approx 580ms)
     audio.playHit();
     this.triggerShake(12, 18);
 
@@ -1020,9 +1026,15 @@ export class GameEngine {
       
       this.ctx.translate(this.player.x, this.player.y + bounce);
       
-      // Rotate character in direction of flight
+      // Rotate character in direction of flight, or tumble if hit
       this.ctx.translate(this.player.width / 2, this.player.height / 2);
-      this.ctx.rotate(Math.max(-0.25, Math.min(0.25, angle)));
+      if (this.player.hitAnimTimer > 0) {
+        // Backflip tumble effect
+        const spin = (this.player.hitAnimTimer / 35) * Math.PI * 2;
+        this.ctx.rotate(-spin);
+      } else {
+        this.ctx.rotate(Math.max(-0.25, Math.min(0.25, angle)));
+      }
       
       // Squash & stretch depending on horizontal speed and eat bounce animations
       const stretchX = (this.player.isSkillActive && this.character.id === 'hanni' ? 1.15 : 1.0) * this.player.bounceScale;
@@ -1072,6 +1084,13 @@ export class GameEngine {
         const drawHeight = 65;
         const drawWidth = 65 * currentRatio;
 
+        // Apply hit flashing red filter if in hit animation state
+        if (this.player.hitAnimTimer > 0) {
+          if (Math.floor(performance.now() / 50) % 2 === 0) {
+            this.ctx.filter = 'sepia(1) saturate(8) hue-rotate(-50deg) brightness(0.8)';
+          }
+        }
+
         this.ctx.drawImage(
           spriteCanvas,
           -drawWidth / 2,
@@ -1079,6 +1098,45 @@ export class GameEngine {
           drawWidth,
           drawHeight
         );
+
+        // Reset filter
+        this.ctx.filter = 'none';
+
+        // Draw dizzy stars above character's head if hit
+        if (this.player.hitAnimTimer > 0) {
+          this.ctx.save();
+          this.ctx.translate(0, -drawHeight / 2 - 12);
+          const time = performance.now() / 120;
+          const numStars = 3;
+          const rx = 24;
+          const ry = 8;
+          for (let i = 0; i < numStars; i++) {
+            const starAngle = time + (i * Math.PI * 2 / numStars);
+            const sx = Math.cos(starAngle) * rx;
+            const sy = Math.sin(starAngle) * ry;
+            this.ctx.save();
+            this.ctx.translate(sx, sy);
+            this.ctx.rotate(time * 0.5);
+            this.ctx.fillStyle = '#facc15';
+            this.ctx.shadowColor = '#facc15';
+            this.ctx.shadowBlur = 6;
+            this.ctx.beginPath();
+            for (let j = 0; j < 5; j++) {
+              this.ctx.lineTo(
+                Math.cos(((18 + j * 72) * Math.PI) / 180) * 5,
+                -Math.sin(((18 + j * 72) * Math.PI) / 180) * 5
+              );
+              this.ctx.lineTo(
+                Math.cos(((54 + j * 72) * Math.PI) / 180) * 2,
+                -Math.sin(((54 + j * 72) * Math.PI) / 180) * 2
+              );
+            }
+            this.ctx.closePath();
+            this.ctx.fill();
+            this.ctx.restore();
+          }
+          this.ctx.restore();
+        }
       } else {
         // Fallback: draw placeholder cube
         this.ctx.fillStyle = '#a855f7';
