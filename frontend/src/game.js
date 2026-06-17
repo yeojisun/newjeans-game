@@ -11,6 +11,9 @@ export class GameEngine {
     this.onGameOver = callbacks.onGameOver || (() => {});
     this.onSkillUpdate = callbacks.onSkillUpdate || (() => {});
     this.onSkillActive = callbacks.onSkillActive || (() => {});
+    this.onStageUpdate = callbacks.onStageUpdate || (() => {});
+    this.onBossHpUpdate = callbacks.onBossHpUpdate || (() => {});
+    this.onGameClear = callbacks.onGameClear || (() => {});
 
     // Game configurations
     this.width = 960;
@@ -32,6 +35,29 @@ export class GameEngine {
     this.touchStart = { x: 0, y: 0 };
     this.playerStart = { x: 0, y: 0 };
     this.isDragging = false;
+
+    // Stage & Boss States
+    this.stage = 1;
+    this.maxStages = 5;
+    this.stageDistance = 0;
+    this.maxStageDistance = 1500; // 1500 meters of running before boss
+    this.stageClearTimer = 0;
+    
+    this.boss = {
+      active: false,
+      name: '',
+      hp: 0,
+      maxHp: 0,
+      x: 0,
+      y: 0,
+      width: 130,
+      height: 130,
+      vy: 2,
+      shootCooldown: 0,
+      patternTimer: 0,
+      color: '',
+      projectiles: []
+    };
 
     // Player Object
     this.player = {
@@ -222,6 +248,28 @@ export class GameEngine {
     this.player.hitAnimTimer = 0;
     this.isDragging = false;
 
+    // Reset Stage & Boss States
+    this.stage = 1;
+    this.stageDistance = 0;
+    this.stageClearTimer = 0;
+    this.boss = {
+      active: false,
+      name: '',
+      hp: 0,
+      maxHp: 0,
+      x: 0,
+      y: 0,
+      width: 130,
+      height: 130,
+      vy: 2,
+      shootCooldown: 0,
+      patternTimer: 0,
+      color: '',
+      projectiles: []
+    };
+    this.onStageUpdate(this.stage);
+    this.onBossHpUpdate(0);
+
     this.projectiles = [];
     this.collectibles = [];
     this.obstacles = [];
@@ -237,12 +285,29 @@ export class GameEngine {
 
   stop() {
     this.isPlaying = false;
+    this.boss.active = false;
+    this.boss.projectiles = [];
     audio.stopBgm();
   }
 
   triggerShake(intensity, duration) {
     this.shakeIntensity = intensity;
     this.shakeDuration = duration;
+  }
+
+  stageClear() {
+    this.boss.active = false;
+    this.boss.projectiles = [];
+    this.obstacles = [];
+    this.projectiles = [];
+    
+    audio.playSkill(); // Celebration sound
+    
+    // Give Stage Clear points bonus
+    this.score += this.stage * 2000;
+    this.onScoreUpdate(this.score);
+
+    this.stageClearTimer = 180; // 3 seconds banner pause
   }
 
   shoot() {
@@ -369,21 +434,15 @@ export class GameEngine {
       this.player.hitAnimTimer = Math.max(0, this.player.hitAnimTimer - dt);
     }
 
-    // Auto-shoot when holding down/touching in mouse/touch control mode
     if (this.mouse.isDown && this.controlMode === 'mouse') {
       this.shoot();
     }
 
-    this.distance += (this.player.isSkillActive && this.character.id === 'hanni' ? 12 : 4) * dt * this.timeScale;
-
-    // 1. Shake & Bounce Handlers
     if (this.shakeDuration > 0) {
       this.shakeDuration -= dt;
     }
-    // Dampen player eat bounce back to 1.0
     this.player.bounceScale += (1.0 - this.player.bounceScale) * 0.16 * dt;
 
-    // 2. Active Skill Timer
     if (this.player.isSkillActive) {
       this.player.activeSkillTimer -= dt;
       if (this.player.activeSkillTimer <= 0) {
@@ -391,35 +450,68 @@ export class GameEngine {
       }
     }
 
-    // 3. Invincibility Timer
     if (this.player.invincibleTimer > 0) {
       this.player.invincibleTimer -= dt;
-      if (this.player.invincibleTimer <= 0 && this.character.id !== 'hanni') {
-        this.player.isInvincible = false;
+      if (this.player.invincibleTimer <= 0) {
+        if (!(this.character.id === 'hanni' && this.player.isSkillActive)) {
+          this.player.isInvincible = false;
+        }
       }
     }
 
-    // 4. Update Player Movement
+    if (this.stageClearTimer > 0) {
+      this.stageClearTimer -= dt;
+      if (this.stageClearTimer <= 0) {
+        if (this.stage < this.maxStages) {
+          this.stage += 1;
+          this.stageDistance = 0;
+          this.onStageUpdate(this.stage);
+          this.projectiles = [];
+          this.obstacles = [];
+          this.collectibles = [];
+        } else {
+          this.isPlaying = false;
+          this.onGameClear(this.score);
+          audio.stopBgm();
+          return;
+        }
+      }
+      
+      const baseScrollSpeed = (this.player.isSkillActive && this.character.id === 'hanni' ? 10 : 3.5);
+      const speedMultiplier = baseScrollSpeed * this.timeScale * dt;
+      this.bgStars.forEach(star => {
+        star.x -= star.speed * speedMultiplier * 0.5;
+        if (star.x < 0) {
+          star.x = this.width;
+          star.y = Math.random() * this.height;
+        }
+      });
+      this.bgClouds.forEach(cloud => {
+        cloud.x -= cloud.speed * speedMultiplier;
+      });
+      this.particles.forEach((p, idx) => {
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.alpha -= p.decay * dt;
+        if (p.alpha <= 0) this.particles.splice(idx, 1);
+      });
+      return;
+    }
+
     if (this.controlMode === 'keyboard') {
       const accel = 1.2;
       const friction = 0.82;
-
-      // Handle WASD & Arrows
       let ax = 0;
       let ay = 0;
-
       if (this.keys['ArrowUp'] || this.keys['KeyW']) ay = -accel;
       if (this.keys['ArrowDown'] || this.keys['KeyS']) ay = accel;
       if (this.keys['ArrowLeft'] || this.keys['KeyA']) ax = -accel;
       if (this.keys['ArrowRight'] || this.keys['KeyD']) ax = accel;
-
       this.player.vx = (this.player.vx + ax) * friction;
       this.player.vy = (this.player.vy + ay) * friction;
-
       this.player.x += this.player.vx * dt;
       this.player.y += this.player.vy * dt;
     } else {
-      // Follow mouse/touch with relative drag or direct easing
       let targetX, targetY;
       if (this.isDragging) {
         const dx = this.mouse.x - this.touchStart.x;
@@ -430,25 +522,19 @@ export class GameEngine {
         targetX = this.mouse.x - this.player.width / 2;
         targetY = this.mouse.y - this.player.height / 2;
       }
-
-      // Bound player position within limits
       targetX = Math.max(20, Math.min(this.width / 2, targetX));
       targetY = Math.max(20, Math.min(this.height - this.player.height - 20, targetY));
-
       this.player.x += (targetX - this.player.x) * 0.22 * dt;
       this.player.y += (targetY - this.player.y) * 0.22 * dt;
     }
 
-    // Dynamic dash speed boost
     if (this.player.isSkillActive && this.character.id === 'hanni') {
-      this.player.x = Math.max(150, this.player.x + (12 - this.player.x) * 0.05 * dt); // Push forward slightly during dash
+      this.player.x = Math.max(150, this.player.x + (12 - this.player.x) * 0.05 * dt);
     }
 
-    // Bounds checking
     this.player.x = Math.max(20, Math.min(this.width / 2, this.player.x));
     this.player.y = Math.max(20, Math.min(this.height - this.player.height - 20, this.player.y));
 
-    // Player Flight Trail Particles
     if (Math.random() < 0.4 * dt) {
       const trailColor = this.player.isSkillActive ? this.character.color : '#ffffff';
       this.createParticle(
@@ -461,7 +547,6 @@ export class GameEngine {
       );
     }
 
-    // 5. Update Backgrounds (Stars & Clouds)
     const baseScrollSpeed = (this.player.isSkillActive && this.character.id === 'hanni' ? 10 : 3.5);
     const speedMultiplier = baseScrollSpeed * this.timeScale * dt;
 
@@ -473,7 +558,6 @@ export class GameEngine {
       }
     });
 
-    // Cloud background parallax layer
     if (Math.random() < 0.005 * dt) {
       this.bgClouds.push({
         x: this.width,
@@ -492,85 +576,221 @@ export class GameEngine {
       }
     });
 
-    // 6. Spawn Collectibles
-    this.spawnTimers.collectible -= dt;
-    if (this.spawnTimers.collectible <= 0) {
-      const types = ['bunny', 'bunny', 'bunny', 'cd', 'binkybong'];
-      const type = types[Math.floor(Math.random() * types.length)];
-      this.collectibles.push({
-        x: this.width + 50,
-        y: Math.random() * (this.height - 100) + 50,
-        type: type,
-        size: type === 'bunny' ? 24 : type === 'cd' ? 32 : 36,
-        color: type === 'bunny' ? '#ff79b4' : type === 'cd' ? '#06b6d4' : '#eab308'
-      });
-      // Dynamic spawn intervals
-      this.spawnTimers.collectible = Math.random() * 80 + 50;
+    if (!this.boss.active) {
+      this.spawnTimers.collectible -= dt;
+      if (this.spawnTimers.collectible <= 0) {
+        const types = ['bunny', 'bunny', 'bunny', 'cd', 'binkybong'];
+        const type = types[Math.floor(Math.random() * types.length)];
+        this.collectibles.push({
+          x: this.width + 50,
+          y: Math.random() * (this.height - 100) + 50,
+          type: type,
+          size: type === 'bunny' ? 24 : type === 'cd' ? 32 : 36,
+          color: type === 'bunny' ? '#ff79b4' : type === 'cd' ? '#06b6d4' : '#eab308'
+        });
+        this.spawnTimers.collectible = Math.random() * 80 + 50;
+      }
     }
 
-    // 7. Spawn Obstacles
-    this.spawnTimers.obstacle -= dt;
-    if (this.spawnTimers.obstacle <= 0) {
-      const obstacleTypes = ['cloud', 'glitch'];
-      const type = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
-      
-      this.obstacles.push({
-        x: this.width + 100,
-        y: Math.random() * (this.height - 120) + 50,
-        type: type,
-        w: type === 'cloud' ? 70 : 35,
-        h: type === 'cloud' ? 50 : 35,
-        hp: type === 'cloud' ? 2 : 99999, // Glitch is indestructible!
-        color: type === 'cloud' ? '#475569' : '#ef4444',
-        vy: type === 'glitch' ? (Math.random() * 4 - 2) : 0 // Glitch pixels move vertically
-      });
-      // Increase spawn rate based on distance
-      const minSpawnRate = Math.max(35, 100 - (this.distance / 200));
-      this.spawnTimers.obstacle = Math.random() * 50 + minSpawnRate;
+    if (!this.boss.active) {
+      this.spawnTimers.obstacle -= dt;
+      if (this.spawnTimers.obstacle <= 0) {
+        const obstacleTypes = ['cloud', 'glitch'];
+        const type = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
+        this.obstacles.push({
+          x: this.width + 100,
+          y: Math.random() * (this.height - 120) + 50,
+          type: type,
+          w: type === 'cloud' ? 70 : 35,
+          h: type === 'cloud' ? 50 : 35,
+          hp: type === 'cloud' ? 2 : 99999,
+          color: type === 'cloud' ? '#475569' : '#ef4444',
+          vy: type === 'glitch' ? (Math.random() * 4 - 2) : 0
+        });
+        const minSpawnRate = Math.max(35, 100 - (this.distance / 200));
+        this.spawnTimers.obstacle = Math.random() * 50 + minSpawnRate;
+      }
     }
 
-    // 8. Update Projectiles
+    if (!this.boss.active) {
+      this.stageDistance += (this.player.isSkillActive && this.character.id === 'hanni' ? 10 : 3.5) * dt * this.timeScale;
+      if (this.stageDistance >= this.maxStageDistance) {
+        this.boss.active = true;
+        this.boss.x = 985;
+        this.boss.y = 200;
+        this.boss.projectiles = [];
+        this.boss.vy = 2;
+        this.boss.patternTimer = 0;
+        switch (this.stage) {
+          case 1:
+            this.boss.name = 'Storm Cloud Balloon';
+            this.boss.maxHp = 25;
+            this.boss.color = '#38bdf8';
+            break;
+          case 2:
+            this.boss.name = 'CD Glitcher';
+            this.boss.maxHp = 50;
+            this.boss.color = '#ff71ce';
+            break;
+          case 3:
+            this.boss.name = 'Cyber Tokki Mech';
+            this.boss.maxHp = 75;
+            this.boss.color = '#10b981';
+            break;
+          case 4:
+            this.boss.name = 'Matrix Core';
+            this.boss.maxHp = 100;
+            this.boss.color = '#8b5cf6';
+            break;
+          case 5:
+            this.boss.name = 'The Ultimate Glitch Monster';
+            this.boss.maxHp = 150;
+            this.boss.color = '#ef4444';
+            break;
+        }
+        this.boss.hp = this.boss.maxHp;
+        this.boss.shootCooldown = 60;
+        this.onBossHpUpdate(1.0);
+        this.obstacles = [];
+        this.collectibles = [];
+      }
+    }
+
+    if (this.boss.active) {
+      if (this.boss.x > 720) {
+        this.boss.x -= 3 * dt;
+      }
+      this.boss.y += this.boss.vy * dt;
+      if (this.boss.y < 80 || this.boss.y > 380) {
+        this.boss.vy *= -1;
+      }
+      this.boss.shootCooldown -= dt;
+      if (this.boss.shootCooldown <= 0) {
+        switch (this.stage) {
+          case 1:
+            this.boss.projectiles.push({ x: this.boss.x, y: this.boss.y + 40, vx: -5, vy: 1.5, size: 5, color: '#38bdf8' });
+            this.boss.projectiles.push({ x: this.boss.x, y: this.boss.y + 40, vx: -5, vy: 0, size: 5, color: '#38bdf8' });
+            this.boss.projectiles.push({ x: this.boss.x, y: this.boss.y + 40, vx: -5, vy: -1.5, size: 5, color: '#38bdf8' });
+            this.boss.shootCooldown = 90;
+            break;
+          case 2:
+            this.boss.projectiles.push({ x: this.boss.x, y: this.boss.y + 35, vx: -9, vy: 0, size: 7, color: '#ff71ce' });
+            this.boss.shootCooldown = 75;
+            break;
+          case 3:
+            for (let i = -2; i <= 2; i++) {
+              this.boss.projectiles.push({ x: this.boss.x, y: this.boss.y + 40, vx: -6, vy: i * 1.5, size: 5, color: '#05ffc0' });
+            }
+            this.boss.shootCooldown = 85;
+            break;
+          case 4:
+            const dy = (this.player.y + this.player.height/2) - (this.boss.y + this.boss.height/2);
+            const dx = (this.player.x + this.player.width/2) - (this.boss.x);
+            const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+            this.boss.projectiles.push({ 
+              x: this.boss.x, 
+              y: this.boss.y + 40, 
+              vx: (dx / dist) * 7.5, 
+              vy: (dy / dist) * 7.5, 
+              size: 8, 
+              color: '#b967ff' 
+            });
+            this.boss.shootCooldown = 100;
+            break;
+          case 5:
+            const numShots = 8;
+            for (let i = 0; i < numShots; i++) {
+              const pAngle = (i * Math.PI * 2 / numShots) + (this.boss.patternTimer * 0.1);
+              this.boss.projectiles.push({
+                x: this.boss.x + this.boss.width/2,
+                y: this.boss.y + this.boss.height/2,
+                vx: Math.cos(pAngle) * 5,
+                vy: Math.sin(pAngle) * 5,
+                size: 6,
+                color: '#ef4444'
+              });
+            }
+            this.boss.shootCooldown = 80;
+            break;
+        }
+      }
+      this.boss.patternTimer += dt;
+      this.projectiles.forEach((p, idx) => {
+        if (
+          p.x + p.radius > this.boss.x &&
+          p.x - p.radius < this.boss.x + this.boss.width &&
+          p.y + p.radius > this.boss.y &&
+          p.y - p.radius < this.boss.y + this.boss.height
+        ) {
+          this.projectiles.splice(idx, 1);
+          this.boss.hp -= 1;
+          this.score += 50;
+          this.onScoreUpdate(this.score);
+          this.onBossHpUpdate(this.boss.hp / this.boss.maxHp);
+          for (let i = 0; i < 4; i++) {
+            this.createParticle(p.x, p.y, this.boss.color, Math.random() * 4 - 2, Math.random() * 4 - 2, 3);
+          }
+          audio.playHit();
+          if (this.boss.hp <= 0) {
+            this.stageClear();
+          }
+        }
+      });
+    }
+
+    if (this.boss.projectiles && this.boss.projectiles.length > 0) {
+      this.boss.projectiles.forEach((bp, idx) => {
+        bp.x += bp.vx * dt;
+        bp.y += bp.vy * dt;
+        if (Math.random() < 0.2) {
+          this.createParticle(bp.x, bp.y, bp.color, -1, 0, 2);
+        }
+        if (
+          bp.x - bp.size < this.player.x + this.player.width &&
+          bp.x + bp.size > this.player.x &&
+          bp.y - bp.size < this.player.y + this.player.height &&
+          bp.y + bp.size > this.player.y
+        ) {
+          this.hitPlayer();
+          this.boss.projectiles.splice(idx, 1);
+          return;
+        }
+        if (bp.x < -20 || bp.x > this.width + 20 || bp.y < -20 || bp.y > this.height + 20) {
+          this.boss.projectiles.splice(idx, 1);
+        }
+      });
+    }
+
     this.projectiles.forEach((p, idx) => {
       p.x += p.vx * dt;
       p.y += p.vy * dt;
-
-      // Create micro trail
       if (Math.random() < 0.3) {
         this.createParticle(p.x, p.y, p.color, -1, 0, 2);
       }
-
       if (p.x > this.width + p.radius) {
         this.projectiles.splice(idx, 1);
       }
     });
 
-    // 9. Update Collectibles (Magnet effects apply here)
-    // Haerin has passive magnetic pull. Active skill increases magnet range for others.
-    let magnetRange = 120;
-    if (this.player.isSkillActive && this.character.id === 'haerin') {
-      magnetRange = 1000; // Screen-wide magnet
-    } else if (this.character.id === 'haerin') {
-      magnetRange = 250; // High passive range
-    } else if (this.player.isSkillActive && this.character.id === 'danielle') {
-      magnetRange = 350; // Danielle's skill increases range
-    }
-
     this.collectibles.forEach((item, idx) => {
-      // Move left
+      let magnetRange = 120;
+      if (this.player.isSkillActive && this.character.id === 'haerin') {
+        magnetRange = 1000;
+      } else if (this.character.id === 'haerin') {
+        magnetRange = 250;
+      } else if (this.player.isSkillActive && this.character.id === 'danielle') {
+        magnetRange = 350;
+      }
       let dx = item.x - (this.player.x + this.player.width / 2);
       let dy = item.y - (this.player.y + this.player.height / 2);
       let dist = Math.sqrt(dx * dx + dy * dy);
-
       if (dist < magnetRange) {
-        // Attracted by magnet
         let speed = (magnetRange === 1000 ? 15 : 8) * dt;
         item.x -= (dx / dist) * speed;
         item.y -= (dy / dist) * speed;
       } else {
         item.x -= (this.player.isSkillActive && this.character.id === 'hanni' ? 8 : 4.5) * dt * this.timeScale;
       }
-
-      // Collide with player
       if (
         item.x - item.size / 2 < this.player.x + this.player.width &&
         item.x + item.size / 2 > this.player.x &&
@@ -581,27 +801,20 @@ export class GameEngine {
         this.collectibles.splice(idx, 1);
         return;
       }
-
       if (item.x < -item.size) {
         this.collectibles.splice(idx, 1);
       }
     });
 
-    // 10. Update Obstacles
     this.obstacles.forEach((obs, idx) => {
-      // Scroll left
       const scrollSpeed = (this.player.isSkillActive && this.character.id === 'hanni' ? 8 : 4.8);
       obs.x -= scrollSpeed * dt * this.timeScale;
       obs.y += obs.vy * dt * this.timeScale;
-
-      // Bounce glitch obstacles off screen limits
       if (obs.type === 'glitch') {
         if (obs.y < 30 || obs.y > this.height - obs.h - 30) {
           obs.vy *= -1;
         }
       }
-
-      // Check collision with player
       if (
         obs.x < this.player.x + this.player.width - 10 &&
         obs.x + obs.w > this.player.x + 10 &&
@@ -609,7 +822,6 @@ export class GameEngine {
         obs.y + obs.h > this.player.y + 10
       ) {
         if (this.player.isSkillActive && this.character.id === 'hanni') {
-          // Hanni's hyper dash breaks through obstacles!
           this.destroyObstacle(obs, idx, true);
         } else {
           this.hitPlayer();
@@ -617,8 +829,6 @@ export class GameEngine {
         }
         return;
       }
-
-      // Check collision with player's projectiles
       this.projectiles.forEach((p, pIdx) => {
         if (
           p.x + p.radius > obs.x &&
@@ -627,10 +837,8 @@ export class GameEngine {
           p.y - p.radius < obs.y + obs.h
         ) {
           this.projectiles.splice(pIdx, 1);
-          
           if (obs.type === 'cloud') {
             obs.hp -= 1;
-            // Sparkles when hit
             for (let i = 0; i < 5; i++) {
               this.createParticle(p.x, p.y, p.color, Math.random() * 4 - 2, Math.random() * 4 - 2, 3);
             }
@@ -799,11 +1007,30 @@ export class GameEngine {
       this.ctx.translate(dx, dy);
     }
 
-    // 1. Draw Space Background (Deep Navy/Purple Gradient)
+    // 1. Draw Space Background (Theme colors based on stage)
     const bgGrad = this.ctx.createLinearGradient(0, 0, 0, this.height);
-    bgGrad.addColorStop(0, '#090514');
-    bgGrad.addColorStop(0.5, '#120b2e');
-    bgGrad.addColorStop(1, '#1b1248');
+    switch (this.stage) {
+      case 1:
+        bgGrad.addColorStop(0, '#090514'); // Navy
+        bgGrad.addColorStop(1, '#1b1248');
+        break;
+      case 2:
+        bgGrad.addColorStop(0, '#2b061c'); // Cyber Sunset magenta
+        bgGrad.addColorStop(1, '#530f2f');
+        break;
+      case 3:
+        bgGrad.addColorStop(0, '#03140e'); // Acid Green
+        bgGrad.addColorStop(1, '#0c3b28');
+        break;
+      case 4:
+        bgGrad.addColorStop(0, '#0e051c'); // Indigo Violet
+        bgGrad.addColorStop(1, '#250b44');
+        break;
+      case 5:
+        bgGrad.addColorStop(0, '#050208'); // Glitch Crimson/Black
+        bgGrad.addColorStop(1, '#1f0408');
+        break;
+    }
     this.ctx.fillStyle = bgGrad;
     this.ctx.fillRect(0, 0, this.width, this.height);
 
@@ -1361,6 +1588,168 @@ export class GameEngine {
           5
         );
       }
+    }
+
+    // Draw Boss Projectiles
+    if (this.boss.projectiles && this.boss.projectiles.length > 0) {
+      this.boss.projectiles.forEach(bp => {
+        this.ctx.save();
+        this.ctx.fillStyle = bp.color;
+        this.ctx.shadowColor = bp.color;
+        this.ctx.shadowBlur = 10;
+        this.ctx.beginPath();
+        this.ctx.arc(bp.x, bp.y, bp.size, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.restore();
+      });
+    }
+
+    // Draw Boss Character
+    if (this.boss.active) {
+      this.ctx.save();
+      this.ctx.translate(this.boss.x + this.boss.width / 2, this.boss.y + this.boss.height / 2);
+      switch (this.stage) {
+        case 1:
+          // Storm Cloud Balloon
+          this.ctx.fillStyle = '#334155';
+          this.ctx.strokeStyle = '#38bdf8';
+          this.ctx.lineWidth = 4;
+          this.ctx.shadowColor = '#38bdf8';
+          this.ctx.shadowBlur = 15;
+          this.ctx.beginPath();
+          this.ctx.arc(0, -10, 40, 0, Math.PI * 2);
+          this.ctx.arc(-30, 10, 30, 0, Math.PI * 2);
+          this.ctx.arc(30, 10, 30, 0, Math.PI * 2);
+          this.ctx.fill();
+          this.ctx.stroke();
+          if (performance.now() % 400 < 200) {
+            this.ctx.strokeStyle = '#facc15';
+            this.ctx.lineWidth = 5;
+            this.ctx.beginPath();
+            this.ctx.moveTo(-10, -20);
+            this.ctx.lineTo(-20, 10);
+            this.ctx.lineTo(5, -5);
+            this.ctx.lineTo(-5, 30);
+            this.ctx.stroke();
+          }
+          break;
+        case 2:
+          // CD Glitcher
+          this.ctx.strokeStyle = '#ff71ce';
+          this.ctx.lineWidth = 10;
+          this.ctx.shadowColor = '#ff71ce';
+          this.ctx.shadowBlur = 18;
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, 40, 0, Math.PI * 2);
+          this.ctx.stroke();
+          this.ctx.fillStyle = '#1e1b4b';
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, 12, 0, Math.PI * 2);
+          this.ctx.fill();
+          this.ctx.fillStyle = '#ffb300';
+          this.ctx.fillRect(-55, Math.sin(performance.now() / 100) * 35, 12, 5);
+          this.ctx.fillRect(40, Math.cos(performance.now() / 120) * 30, 18, 5);
+          break;
+        case 3:
+          // Cyber Tokki Mech
+          this.ctx.fillStyle = '#e2f3fc';
+          this.ctx.strokeStyle = '#10b981';
+          this.ctx.lineWidth = 4;
+          this.ctx.shadowColor = '#10b981';
+          this.ctx.shadowBlur = 20;
+          this.ctx.save();
+          this.ctx.translate(-15, -30);
+          this.ctx.rotate(-0.15);
+          this.ctx.beginPath();
+          this.ctx.ellipse(0, 0, 10, 40, 0, 0, Math.PI * 2);
+          this.ctx.fill();
+          this.ctx.stroke();
+          this.ctx.restore();
+          this.ctx.save();
+          this.ctx.translate(15, -30);
+          this.ctx.rotate(0.15);
+          this.ctx.beginPath();
+          this.ctx.ellipse(0, 0, 10, 40, 0, 0, Math.PI * 2);
+          this.ctx.fill();
+          this.ctx.stroke();
+          this.ctx.restore();
+          this.ctx.beginPath();
+          this.ctx.arc(0, 5, 38, 0, Math.PI * 2);
+          this.ctx.fill();
+          this.ctx.stroke();
+          this.ctx.fillStyle = '#05ffc0';
+          this.ctx.beginPath();
+          this.ctx.arc(-12, 0, 7, 0, Math.PI * 2);
+          this.ctx.arc(12, 0, 7, 0, Math.PI * 2);
+          this.ctx.fill();
+          break;
+        case 4:
+          // Matrix Core
+          this.ctx.fillStyle = '#8b5cf6';
+          this.ctx.shadowColor = '#b967ff';
+          this.ctx.shadowBlur = 25;
+          const p = 14 + Math.sin(performance.now() / 100) * 4;
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, p, 0, Math.PI * 2);
+          this.ctx.fill();
+          this.ctx.strokeStyle = '#ffffff';
+          this.ctx.lineWidth = 2;
+          this.ctx.save();
+          this.ctx.rotate(performance.now() / 400);
+          this.ctx.strokeRect(-35, -35, 70, 70);
+          this.ctx.rotate(Math.PI / 4);
+          this.ctx.strokeRect(-30, -30, 60, 60);
+          this.ctx.restore();
+          break;
+        case 5:
+          // Ultimate Glitch Monster
+          this.ctx.fillStyle = '#ef4444';
+          this.ctx.shadowColor = '#ef4444';
+          this.ctx.shadowBlur = 30;
+          const o1 = Math.sin(performance.now() / 50) * 10;
+          const o2 = Math.cos(performance.now() / 40) * 6;
+          this.ctx.fillRect(-40 + o1, -40, 80, 80);
+          this.ctx.fillStyle = '#06b6d4';
+          this.ctx.fillRect(-50 + o2, -15, 18, 40);
+          this.ctx.fillStyle = '#ffffff';
+          this.ctx.fillRect(30 - o1, 8, 20, 20);
+          this.ctx.fillStyle = '#ffffff';
+          this.ctx.beginPath();
+          this.ctx.moveTo(-20, -12);
+          this.ctx.lineTo(-8, -4);
+          this.ctx.lineTo(-20, -4);
+          this.ctx.closePath();
+          this.ctx.fill();
+          this.ctx.beginPath();
+          this.ctx.moveTo(20, -12);
+          this.ctx.lineTo(8, -4);
+          this.ctx.lineTo(20, -4);
+          this.ctx.closePath();
+          this.ctx.fill();
+          break;
+      }
+      this.ctx.restore();
+    }
+
+    // Draw Stage Clear Overlay
+    if (this.stageClearTimer > 0) {
+      this.ctx.save();
+      this.ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+      this.ctx.fillRect(0, 0, this.width, this.height);
+      
+      this.ctx.fillStyle = '#ff71ce';
+      this.ctx.font = "800 2.8rem 'Rubik Mono One', sans-serif";
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'middle';
+      this.ctx.shadowColor = '#ff71ce';
+      this.ctx.shadowBlur = 20;
+      this.ctx.fillText(`STAGE ${this.stage} CLEAR!`, this.width / 2, this.height / 2);
+      
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.font = "600 1.2rem 'Outfit', sans-serif";
+      this.ctx.shadowBlur = 0;
+      this.ctx.fillText(`BONUS POINTS: +${this.stage * 2000}`, this.width / 2, this.height / 2 + 50);
+      this.ctx.restore();
     }
 
     // Restore Canvas State

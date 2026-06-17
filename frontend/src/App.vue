@@ -27,6 +27,8 @@ const playerHp = ref(3);
 const activeSkillMessage = ref('');
 const skillMessageTimer = ref(null);
 const isMuted = ref(false);
+const currentStage = ref(1);
+const bossHpRatio = ref(0);
 
 // Game Engine Reference
 const canvasRef = ref(null);
@@ -85,6 +87,8 @@ const startGame = () => {
   currentScore.value = 0;
   skillGauge.value = 0;
   playerHp.value = 3;
+  currentStage.value = 1;
+  bossHpRatio.value = 0;
   
   // Initialize game engine
   setTimeout(() => {
@@ -106,6 +110,20 @@ const startGame = () => {
         },
         onSkillActive: (charName, skillName) => {
           showSkillBanner(charName, skillName);
+        },
+        onStageUpdate: (stage) => {
+          currentStage.value = stage;
+        },
+        onBossHpUpdate: (hpRatio) => {
+          bossHpRatio.value = hpRatio;
+        },
+        onGameClear: (score) => {
+          finalScore.value = score;
+          gameState.value = 'victory';
+          if (game) {
+            game.stop();
+          }
+          fetchLeaderboard();
         }
       });
 
@@ -325,6 +343,12 @@ const toggleMute = () => {
           </div>
         </div>
 
+        <!-- Stage -->
+        <div class="hud-item stage-container">
+          <span class="hud-label">STAGE:</span>
+          <span class="hud-val text-cyan">{{ currentStage }}</span>
+        </div>
+
         <!-- Score -->
         <div class="hud-item score-container">
           <span class="hud-label">SCORE:</span>
@@ -340,6 +364,16 @@ const toggleMute = () => {
           </div>
         </div>
       </div>
+
+      <!-- Boss HP Bar -->
+      <transition name="fade">
+        <div v-if="bossHpRatio > 0" class="boss-hp-container">
+          <div class="boss-name">BOSS: {{ game?.boss?.name || 'BOSS' }}</div>
+          <div class="boss-gauge-bar">
+            <div class="boss-gauge-fill" :style="{ width: (bossHpRatio * 100) + '%' }"></div>
+          </div>
+        </div>
+      </transition>
 
       <!-- Live Banner notifications for skill activations -->
       <transition name="banner-slide">
@@ -383,6 +417,44 @@ const toggleMute = () => {
           />
           <button 
             class="submit-btn" 
+            @click="submitScore" 
+            :disabled="isSubmittingScore || !playerName.trim()"
+          >
+            {{ isSubmittingScore ? '등록 중...' : '등록 ➔' }}
+          </button>
+        </div>
+        
+        <button class="cancel-btn" @click="gameState = 'menu'">
+          등록 안하고 메인 메뉴로
+        </button>
+      </div>
+    </div>
+
+    <!-- GAME CLEAR VICTORY SCREEN -->
+    <div v-else-if="gameState === 'victory'" class="glass-panel text-center victory-panel">
+      <h1 class="y2k-title glowing-text-green bounce-anim">VICTORY!</h1>
+      <p class="victory-subtitle">최종 스테이지 5 클리어!</p>
+      
+      <div class="score-display victory-score-display">
+        <p class="score-label">FINAL SCORE</p>
+        <h2 class="score-value text-green">{{ finalScore.toLocaleString() }}</h2>
+      </div>
+
+      <div class="submit-form">
+        <p class="submit-prompt">명예의 전당에 위대한 발자취를 남기세요!</p>
+        
+        <div class="input-row">
+          <input 
+            v-model="playerName" 
+            type="text" 
+            placeholder="이름 입력 (MAX 10자)" 
+            maxlength="10" 
+            class="y2k-input victory-input"
+            @keyup.enter="submitScore"
+            :disabled="isSubmittingScore"
+          />
+          <button 
+            class="submit-btn victory-submit-btn" 
             @click="submitScore" 
             :disabled="isSubmittingScore || !playerName.trim()"
           >
@@ -1222,6 +1294,18 @@ body {
     padding: 4px 15px;
     top: 45px;
   }
+
+  .boss-hp-container {
+    width: 200px !important;
+    top: 50px !important;
+    padding: 4px 8px !important;
+  }
+  .boss-name {
+    font-size: 0.55rem !important;
+  }
+  .boss-gauge-bar {
+    height: 8px !important;
+  }
 }
 
 /* Landscape orientation for vertical/portrait held devices inside gameplay context */
@@ -1258,5 +1342,86 @@ body {
   .avatar-name {
     font-size: 0.65rem;
   }
+}
+
+/* Boss HP Bar Styles */
+.boss-hp-container {
+  position: absolute;
+  top: 65px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 300px;
+  background: rgba(0, 0, 0, 0.75);
+  border: 1px solid var(--neon-pink);
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 0 15px rgba(255, 113, 206, 0.3);
+  z-index: 10;
+}
+.boss-name {
+  font-family: 'Rubik Mono One', sans-serif;
+  font-size: 0.65rem;
+  color: var(--neon-pink);
+  text-shadow: 0 0 5px rgba(255, 113, 206, 0.5);
+  text-align: center;
+}
+.boss-gauge-bar {
+  width: 100%;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.boss-gauge-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ef4444, #f43f5e);
+  box-shadow: 0 0 8px #ef4444;
+  transition: width 0.1s ease-out;
+}
+
+/* Victory Screen Styles */
+.victory-panel {
+  max-width: 460px;
+  width: 100%;
+  border-color: var(--neon-green) !important;
+  box-shadow: 0 0 30px rgba(5, 255, 192, 0.4);
+  animation: pulse 4s infinite alternate;
+}
+.victory-subtitle {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: #fff;
+  margin-top: -10px;
+  margin-bottom: 20px;
+  letter-spacing: 1px;
+}
+.victory-score-display {
+  border-color: rgba(5, 255, 192, 0.3) !important;
+  background: rgba(5, 255, 192, 0.05) !important;
+}
+.glowing-text-green {
+  text-shadow: 0 0 10px var(--neon-green), 0 0 20px rgba(5, 255, 192, 0.5);
+}
+.victory-input:focus {
+  border-color: var(--neon-green) !important;
+  box-shadow: 0 0 8px rgba(5, 255, 192, 0.3) !important;
+}
+.victory-submit-btn {
+  background: var(--neon-green) !important;
+  color: #000 !important;
+}
+
+/* Fade Transition */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
 }
 </style>
