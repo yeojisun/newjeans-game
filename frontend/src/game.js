@@ -29,6 +29,9 @@ export class GameEngine {
     this.keys = {};
     this.mouse = { x: 100, y: 270, isDown: false };
     this.controlMode = 'keyboard'; // 'keyboard' or 'mouse'
+    this.touchStart = { x: 0, y: 0 };
+    this.playerStart = { x: 0, y: 0 };
+    this.isDragging = false;
 
     // Player Object
     this.player = {
@@ -93,6 +96,10 @@ export class GameEngine {
     this.initInputs();
   }
 
+  checkIsPortraitRotated() {
+    return window.innerHeight > window.innerWidth && window.innerWidth < 768;
+  }
+
   initInputs() {
     window.addEventListener('keydown', (e) => {
       this.keys[e.code] = true;
@@ -120,10 +127,22 @@ export class GameEngine {
 
     const updateMousePos = (e) => {
       const rect = this.canvas.getBoundingClientRect();
-      const scaleX = this.width / rect.width;
-      const scaleY = this.height / rect.height;
-      this.mouse.x = (e.clientX - rect.left) * scaleX;
-      this.mouse.y = (e.clientY - rect.top) * scaleY;
+      const isPortrait = this.checkIsPortraitRotated();
+
+      if (isPortrait) {
+        // Rotated 90deg clockwise coordinates
+        const relativeX = e.clientY - rect.top;
+        const relativeY = rect.right - e.clientX;
+        const scaleX = this.width / rect.height;
+        const scaleY = this.height / rect.width;
+        this.mouse.x = relativeX * scaleX;
+        this.mouse.y = relativeY * scaleY;
+      } else {
+        const scaleX = this.width / rect.width;
+        const scaleY = this.height / rect.height;
+        this.mouse.x = (e.clientX - rect.left) * scaleX;
+        this.mouse.y = (e.clientY - rect.top) * scaleY;
+      }
     };
 
     this.canvas.addEventListener('mousemove', (e) => {
@@ -132,37 +151,42 @@ export class GameEngine {
 
     this.canvas.addEventListener('mousedown', (e) => {
       this.controlMode = 'mouse';
-      this.mouse.isDown = true;
       updateMousePos(e);
+      this.isDragging = true;
+      this.touchStart.x = this.mouse.x;
+      this.touchStart.y = this.mouse.y;
+      this.playerStart.x = this.player.x;
+      this.playerStart.y = this.player.y;
+      
+      this.mouse.isDown = true;
       this.shoot();
     });
 
     window.addEventListener('mouseup', () => {
       this.mouse.isDown = false;
+      this.isDragging = false;
     });
 
     // Touch Support
     this.canvas.addEventListener('touchmove', (e) => {
       if (e.touches.length > 0) {
         this.controlMode = 'mouse';
-        const rect = this.canvas.getBoundingClientRect();
-        const scaleX = this.width / rect.width;
-        const scaleY = this.height / rect.height;
-        this.mouse.x = (e.touches[0].clientX - rect.left) * scaleX;
-        this.mouse.y = (e.touches[0].clientY - rect.top) * scaleY;
+        updateMousePos(e.touches[0]);
       }
       e.preventDefault();
     }, { passive: false });
 
     this.canvas.addEventListener('touchstart', (e) => {
       this.controlMode = 'mouse';
-      this.mouse.isDown = true;
       if (e.touches.length > 0) {
-        const rect = this.canvas.getBoundingClientRect();
-        const scaleX = this.width / rect.width;
-        const scaleY = this.height / rect.height;
-        this.mouse.x = (e.touches[0].clientX - rect.left) * scaleX;
-        this.mouse.y = (e.touches[0].clientY - rect.top) * scaleY;
+        updateMousePos(e.touches[0]);
+        this.isDragging = true;
+        this.touchStart.x = this.mouse.x;
+        this.touchStart.y = this.mouse.y;
+        this.playerStart.x = this.player.x;
+        this.playerStart.y = this.player.y;
+        
+        this.mouse.isDown = true;
         this.shoot();
       }
       e.preventDefault();
@@ -170,6 +194,12 @@ export class GameEngine {
 
     this.canvas.addEventListener('touchend', () => {
       this.mouse.isDown = false;
+      this.isDragging = false;
+    });
+
+    this.canvas.addEventListener('touchcancel', () => {
+      this.mouse.isDown = false;
+      this.isDragging = false;
     });
   }
 
@@ -190,6 +220,7 @@ export class GameEngine {
     this.player.attackTimer = 0;
     this.player.eatTimer = 0;
     this.player.hitAnimTimer = 0;
+    this.isDragging = false;
 
     this.projectiles = [];
     this.collectibles = [];
@@ -388,12 +419,24 @@ export class GameEngine {
       this.player.x += this.player.vx * dt;
       this.player.y += this.player.vy * dt;
     } else {
-      // Follow mouse/touch with easing
-      const targetX = Math.max(20, Math.min(this.width / 2, this.mouse.x - this.player.width / 2));
-      const targetY = Math.max(20, Math.min(this.height - this.player.height - 20, this.mouse.y - this.player.height / 2));
+      // Follow mouse/touch with relative drag or direct easing
+      let targetX, targetY;
+      if (this.isDragging) {
+        const dx = this.mouse.x - this.touchStart.x;
+        const dy = this.mouse.y - this.touchStart.y;
+        targetX = this.playerStart.x + dx;
+        targetY = this.playerStart.y + dy;
+      } else {
+        targetX = this.mouse.x - this.player.width / 2;
+        targetY = this.mouse.y - this.player.height / 2;
+      }
 
-      this.player.x += (targetX - this.player.x) * 0.18 * dt;
-      this.player.y += (targetY - this.player.y) * 0.18 * dt;
+      // Bound player position within limits
+      targetX = Math.max(20, Math.min(this.width / 2, targetX));
+      targetY = Math.max(20, Math.min(this.height - this.player.height - 20, targetY));
+
+      this.player.x += (targetX - this.player.x) * 0.22 * dt;
+      this.player.y += (targetY - this.player.y) * 0.22 * dt;
     }
 
     // Dynamic dash speed boost

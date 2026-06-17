@@ -469,10 +469,9 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  min-height: 100vh;
   padding: 20px;
-  overflow: hidden;
   background: radial-gradient(circle at center, #180d38 0%, #080512 100%);
 }
 
@@ -1222,6 +1221,23 @@ body {
     font-size: 0.85rem;
     padding: 4px 15px;
     top: 45px;
+  }
+}
+
+/* Landscape orientation for vertical/portrait held devices inside gameplay context */
+@media (max-width: 768px) and (orientation: portrait) {
+  .gameplay-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 100vh !important;
+    height: 100vw !important;
+    transform: translate(-50%, -50%) rotate(90deg);
+    transform-origin: center;
+    z-index: 9999;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
   }
 }
 
