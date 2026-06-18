@@ -4,6 +4,70 @@ const path = require('path');
 const srcPath = 'C:/Users/jisun.yeo/.gemini/antigravity/brain/71e6e127-5b58-4134-b553-f1a41d12ff3e/media__1781683978653.jpg';
 const destDir = path.join(__dirname, 'src', 'assets');
 
+// Helper functions for drawing and rasterization (used for patching cut-off graphics)
+function sign(p1x, p1y, p2x, p2y, p3x, p3y) {
+  return (p1x - p3x) * (p2y - p3y) - (p2x - p3x) * (p1y - p3y);
+}
+
+function pointInTriangle(px, py, v1x, v1y, v2x, v2y, v3x, v3y) {
+  const d1 = sign(px, py, v1x, v1y, v2x, v2y);
+  const d2 = sign(px, py, v2x, v2y, v3x, v3y);
+  const d3 = sign(px, py, v3x, v3y, v1x, v1y);
+
+  const has_neg = (d1 < 0) || (d2 < 0) || (d3 < 0);
+  const has_pos = (d1 > 0) || (d2 > 0) || (d3 > 0);
+
+  return !(has_neg && has_pos);
+}
+
+function fillTriangle(img, v1x, v1y, v2x, v2y, v3x, v3y, colorHex) {
+  const minX = Math.floor(Math.min(v1x, v2x, v3x));
+  const maxX = Math.ceil(Math.max(v1x, v2x, v3x));
+  const minY = Math.floor(Math.min(v1y, v2y, v3y));
+  const maxY = Math.ceil(Math.max(v1y, v2y, v3y));
+
+  for (let y = minY; y <= maxY; y++) {
+    for (let x = minX; x <= maxX; x++) {
+      if (pointInTriangle(x, y, v1x, v1y, v2x, v2y, v3x, v3y)) {
+        img.setPixelColor(colorHex, x, y);
+      }
+    }
+  }
+}
+
+function drawThickLine(img, x0, y0, x1, y1, thickness, color) {
+  const dx = Math.abs(x1 - x0);
+  const dy = Math.abs(y1 - y0);
+  const sx = (x0 < x1) ? 1 : -1;
+  const sy = (y0 < y1) ? 1 : -1;
+  let err = dx - dy;
+  
+  const half = Math.floor(thickness / 2);
+  
+  while (true) {
+    for (let bx = -half; bx <= half; bx++) {
+      for (let by = -half; by <= half; by++) {
+        const px = x0 + bx;
+        const py = y0 + by;
+        if (px >= 0 && px < img.bitmap.width && py >= 0 && py < img.bitmap.height) {
+          img.setPixelColor(color, px, py);
+        }
+      }
+    }
+    if (x0 === x1 && y0 === y1) break;
+    const e2 = 2 * err;
+    if (e2 > -dy) {
+      err -= dy;
+      x0 += sx;
+    }
+    if (e2 < dx) {
+      err += dx;
+      y0 += sy;
+    }
+  }
+}
+
+
 // Flood-fill based transparentizer to clean up off-white/beige paper texture backgrounds
 function removeBackgroundDirect(image, threshold = 60) {
   const w = image.bitmap.width;
@@ -182,6 +246,47 @@ async function cropAll() {
   removeBackgroundDirect(danielleAttack);
   await danielleAttack.write(path.join(destDir, 'attack_danielle.png'));
   console.log('Saved attack_danielle.png');
+
+  console.log('Loading individual Hanni main sprite...');
+  const hanniSprite = await Jimp.read('C:/Users/jisun.yeo/.gemini/antigravity/brain/71e6e127-5b58-4134-b553-f1a41d12ff3e/media__1781766700420.png');
+  removeBackgroundDirect(hanniSprite);
+  await hanniSprite.write(path.join(destDir, 'sprite_hanni.png'));
+  console.log('Saved sprite_hanni.png');
+
+  console.log('Loading individual Hanni fly sprite...');
+  const hanniFly = await Jimp.read('C:/Users/jisun.yeo/.gemini/antigravity/brain/71e6e127-5b58-4134-b553-f1a41d12ff3e/media__1781766722879.png');
+  removeBackgroundDirect(hanniFly);
+  await hanniFly.write(path.join(destDir, 'fly_hanni.png'));
+  console.log('Saved fly_hanni.png');
+
+  console.log('Loading and patching individual Hanni attack sprite...');
+  const hanniAttackRaw = await Jimp.read('C:/Users/jisun.yeo/.gemini/antigravity/brain/71e6e127-5b58-4134-b553-f1a41d12ff3e/media__1781766743157.png');
+  const yellowColor = hanniAttackRaw.getPixelColor(150, 110);
+  
+  // Clean up white background first
+  removeBackgroundDirect(hanniAttackRaw);
+  
+  // Expand width to 220 to prevent cutting off the new spikes
+  const hanniAttackPatched = new Jimp({ width: 220, height: hanniAttackRaw.bitmap.height, color: 0x00000000 });
+  hanniAttackPatched.composite(hanniAttackRaw, 0, 0);
+
+  // Re-draw cut-off yellow attack spikes
+  fillTriangle(hanniAttackPatched, 161, 80, 188, 85, 161, 102, yellowColor);
+  fillTriangle(hanniAttackPatched, 161, 102, 205, 112, 161, 128, yellowColor);
+  fillTriangle(hanniAttackPatched, 161, 128, 185, 138, 161, 145, yellowColor);
+  
+  // Draw black boundaries for spikes
+  const blackColor = 0x000000ff;
+  const lineThickness = 3;
+  drawThickLine(hanniAttackPatched, 161, 80, 188, 85, lineThickness, blackColor);
+  drawThickLine(hanniAttackPatched, 188, 85, 161, 102, lineThickness, blackColor);
+  drawThickLine(hanniAttackPatched, 161, 102, 205, 112, lineThickness, blackColor);
+  drawThickLine(hanniAttackPatched, 205, 112, 161, 128, lineThickness, blackColor);
+  drawThickLine(hanniAttackPatched, 161, 128, 185, 138, lineThickness, blackColor);
+  drawThickLine(hanniAttackPatched, 185, 138, 161, 145, lineThickness, blackColor);
+
+  await hanniAttackPatched.write(path.join(destDir, 'attack_hanni.png'));
+  console.log('Saved attack_hanni.png (with reconstructed splash)');
 
   console.log('All crops and background transparentization completed successfully!');
 }

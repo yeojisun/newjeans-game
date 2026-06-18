@@ -27,6 +27,7 @@ import hitHyein from './assets/hit_hyein.png';
 import hitDanielle from './assets/hit_danielle.png';
 import flyHyein from './assets/fly_hyein.png';
 import flyDanielle from './assets/fly_danielle.png';
+import flyHanni from './assets/fly_hanni.png';
 
 
 const CHARACTERS_META = [
@@ -38,6 +39,7 @@ const CHARACTERS_META = [
     skillName: 'Hype Dash',
     skillDesc: '순식간에 대시하며 일시적 무적 상태가 됩니다. (방향키/드래그 더블 탭)',
     src: spriteHanni,
+    flySrc: flyHanni,
     cheerSrc: cheerHanni,
     attackSrc: attackHanni
   },
