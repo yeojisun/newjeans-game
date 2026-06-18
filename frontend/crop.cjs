@@ -153,6 +153,24 @@ async function cropAll() {
   await hyeinAttack.write(path.join(destDir, 'attack_hyein.png'));
   console.log('Saved attack_hyein.png');
 
+  console.log('Loading individual Danielle main sprite...');
+  const danielleSprite = await Jimp.read('C:/Users/jisun.yeo/.gemini/antigravity/brain/71e6e127-5b58-4134-b553-f1a41d12ff3e/media__1781745774754.png');
+  removeBackgroundDirect(danielleSprite);
+  await danielleSprite.write(path.join(destDir, 'sprite_danielle.png'));
+  console.log('Saved sprite_danielle.png');
+
+  console.log('Loading individual Danielle cheer sprite...');
+  const danielleCheer = await Jimp.read('C:/Users/jisun.yeo/.gemini/antigravity/brain/71e6e127-5b58-4134-b553-f1a41d12ff3e/media__1781745785614.png');
+  removeBackgroundDirect(danielleCheer);
+  await danielleCheer.write(path.join(destDir, 'cheer_danielle.png'));
+  console.log('Saved cheer_danielle.png');
+
+  console.log('Loading individual Danielle fly sprite...');
+  const danielleFly = await Jimp.read('C:/Users/jisun.yeo/.gemini/antigravity/brain/71e6e127-5b58-4134-b553-f1a41d12ff3e/media__1781746268057.png');
+  removeBackgroundDirect(danielleFly);
+  await danielleFly.write(path.join(destDir, 'fly_danielle.png'));
+  console.log('Saved fly_danielle.png');
+
   console.log('All crops and background transparentization completed successfully!');
 }
 

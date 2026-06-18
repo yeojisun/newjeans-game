@@ -25,6 +25,7 @@ import attackHyein from './assets/attack_hyein.png';
 import hitHaerin from './assets/hit_haerin.png';
 import hitHyein from './assets/hit_hyein.png';
 import flyHyein from './assets/fly_hyein.png';
+import flyDanielle from './assets/fly_danielle.png';
 
 
 const CHARACTERS_META = [
@@ -47,6 +48,7 @@ const CHARACTERS_META = [
     skillName: 'Butterfly Score',
     skillDesc: '점수 획득량이 2배로 증가하고 나비가 날아와 골드를 추가 획득합니다.',
     src: spriteDanielle,
+    flySrc: flyDanielle,
     cheerSrc: cheerDanielle,
     attackSrc: attackDanielle
   },
