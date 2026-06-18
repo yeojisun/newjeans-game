@@ -24,6 +24,7 @@ import attackHyein from './assets/attack_hyein.png';
 
 import hitHaerin from './assets/hit_haerin.png';
 import hitHyein from './assets/hit_hyein.png';
+import hitDanielle from './assets/hit_danielle.png';
 import flyHyein from './assets/fly_hyein.png';
 import flyDanielle from './assets/fly_danielle.png';
 
@@ -50,7 +51,8 @@ const CHARACTERS_META = [
     src: spriteDanielle,
     flySrc: flyDanielle,
     cheerSrc: cheerDanielle,
-    attackSrc: attackDanielle
+    attackSrc: attackDanielle,
+    hitSrc: hitDanielle
   },
   {
     id: 'haerin',
