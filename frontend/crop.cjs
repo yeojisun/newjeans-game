@@ -288,6 +288,18 @@ async function cropAll() {
   await hanniAttackPatched.write(path.join(destDir, 'attack_hanni.png'));
   console.log('Saved attack_hanni.png (with reconstructed splash)');
 
+  console.log('Loading individual Hanni cheer sprite...');
+  const hanniCheer = await Jimp.read('C:/Users/jisun.yeo/.gemini/antigravity/brain/71e6e127-5b58-4134-b553-f1a41d12ff3e/media__1781767421100.png');
+  removeBackgroundDirect(hanniCheer);
+  await hanniCheer.write(path.join(destDir, 'cheer_hanni.png'));
+  console.log('Saved cheer_hanni.png');
+
+  console.log('Loading individual Hanni hit sprite...');
+  const hanniHit = await Jimp.read('C:/Users/jisun.yeo/.gemini/antigravity/brain/71e6e127-5b58-4134-b553-f1a41d12ff3e/media__1781767427124.png');
+  removeBackgroundDirect(hanniHit);
+  await hanniHit.write(path.join(destDir, 'hit_hanni.png'));
+  console.log('Saved hit_hanni.png');
+
   console.log('All crops and background transparentization completed successfully!');
 }
 
