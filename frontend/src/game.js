@@ -1443,7 +1443,7 @@ export class GameEngine {
       
       // Draw actual custom cropped character canvas
       if (this.character && this.character.canvas) {
-        let spriteCanvas = this.character.canvas;
+        let spriteCanvas = this.character.flyCanvas || this.character.canvas;
         if (this.player.hitAnimTimer > 0 && this.character.hitCanvas) {
           spriteCanvas = this.character.hitCanvas;
         } else if (this.player.attackTimer > 0 && this.character.attackCanvas) {
@@ -1568,12 +1568,13 @@ export class GameEngine {
         this.ctx.save();
         this.ctx.globalAlpha = 0.3;
         if (this.character.canvas) {
+          const trailCanvas = this.character.flyCanvas || this.character.canvas;
           this.ctx.shadowColor = '#06b6d4';
           this.ctx.shadowBlur = 15;
-          this.ctx.drawImage(this.character.canvas, this.player.x - 30, this.player.y, this.player.width, this.player.height);
+          this.ctx.drawImage(trailCanvas, this.player.x - 30, this.player.y, this.player.width, this.player.height);
           this.ctx.shadowColor = '#ec4899';
           this.ctx.shadowBlur = 15;
-          this.ctx.drawImage(this.character.canvas, this.player.x - 60, this.player.y, this.player.width, this.player.height);
+          this.ctx.drawImage(trailCanvas, this.player.x - 60, this.player.y, this.player.width, this.player.height);
         }
         this.ctx.restore();
       }

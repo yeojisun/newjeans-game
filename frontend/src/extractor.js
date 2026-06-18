@@ -24,6 +24,7 @@ import attackHyein from './assets/attack_hyein.png';
 
 import hitHaerin from './assets/hit_haerin.png';
 import hitHyein from './assets/hit_hyein.png';
+import flyHyein from './assets/fly_hyein.png';
 
 
 const CHARACTERS_META = [
@@ -80,6 +81,7 @@ const CHARACTERS_META = [
     skillName: 'Super Slow-Mo',
     skillDesc: '주변 장애물과 스크롤 속도를 느리게 만들어 쉽게 회피할 수 있게 합니다.',
     src: spriteHyein,
+    flySrc: flyHyein,
     cheerSrc: cheerHyein,
     attackSrc: attackHyein,
     hitSrc: hitHyein
@@ -203,8 +205,13 @@ function processCharacterSprite(char) {
   } else {
     promises.push(Promise.resolve(null));
   }
+  if (char.flySrc) {
+    promises.push(processSingleCanvas(char.flySrc, char.color));
+  } else {
+    promises.push(Promise.resolve(null));
+  }
 
-  return Promise.all(promises).then(([defaultSprite, cheerSprite, attackSprite, hitSprite]) => {
+  return Promise.all(promises).then(([defaultSprite, cheerSprite, attackSprite, hitSprite, flySprite]) => {
     return {
       id: char.id,
       name: char.name,
@@ -229,7 +236,10 @@ function processCharacterSprite(char) {
       attackHeight: attackSprite.height,
       // Hit Sprite
       hitCanvas: hitSprite ? hitSprite.canvas : null,
-      hitDataUrl: hitSprite ? hitSprite.dataUrl : null
+      hitDataUrl: hitSprite ? hitSprite.dataUrl : null,
+      // Fly Sprite
+      flyCanvas: flySprite ? flySprite.canvas : null,
+      flyDataUrl: flySprite ? flySprite.dataUrl : null
     };
   });
 }
