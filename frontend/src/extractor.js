@@ -23,6 +23,8 @@ import attackMinji from './assets/attack_minji.png';
 import attackHyein from './assets/attack_hyein.png';
 
 import hitHaerin from './assets/hit_haerin.png';
+import hitHyein from './assets/hit_hyein.png';
+
 
 const CHARACTERS_META = [
   {
@@ -79,7 +81,8 @@ const CHARACTERS_META = [
     skillDesc: '주변 장애물과 스크롤 속도를 느리게 만들어 쉽게 회피할 수 있게 합니다.',
     src: spriteHyein,
     cheerSrc: cheerHyein,
-    attackSrc: attackHyein
+    attackSrc: attackHyein,
+    hitSrc: hitHyein
   }
 ];
 
