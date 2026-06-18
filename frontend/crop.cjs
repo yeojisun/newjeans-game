@@ -129,6 +129,12 @@ async function cropAll() {
   await hyeinSprite.write(path.join(destDir, 'sprite_hyein.png'));
   console.log('Saved sprite_hyein.png');
 
+  console.log('Loading individual Hyein cheer sprite...');
+  const hyeinCheer = await Jimp.read('C:/Users/jisun.yeo/.gemini/antigravity/brain/71e6e127-5b58-4134-b553-f1a41d12ff3e/media__1781742409477.png');
+  removeBackgroundDirect(hyeinCheer);
+  await hyeinCheer.write(path.join(destDir, 'cheer_hyein.png'));
+  console.log('Saved cheer_hyein.png');
+
   console.log('All crops and background transparentization completed successfully!');
 }
 
