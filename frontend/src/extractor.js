@@ -157,16 +157,30 @@ function processSingleCanvas(src, color) {
       // Draw cropped transparent portion
       trimmedCtx.drawImage(canvas, minX, minY, cropW, cropH, 0, 0, cropW, cropH);
 
+      // Normalize resolution by scaling the trimmed content to a standard max dimension
+      const maxDim = 256;
+      let fitW, fitH;
+      const cropRatio = cropW / cropH;
+      if (cropRatio > 1) {
+        fitW = maxDim;
+        fitH = Math.round(maxDim / cropRatio);
+      } else {
+        fitH = maxDim;
+        fitW = Math.round(maxDim * cropRatio);
+      }
+
       // Create final polished canvas with a glow effect
       const polishedCanvas = document.createElement('canvas');
-      const padding = 10;
-      polishedCanvas.width = cropW + padding * 2;
-      polishedCanvas.height = cropH + padding * 2;
+      const padding = 16; // 16px padding on all sides for the glow to breathe
+      polishedCanvas.width = fitW + padding * 2;
+      polishedCanvas.height = fitH + padding * 2;
       const polishedCtx = polishedCanvas.getContext('2d');
 
       polishedCtx.shadowColor = color;
-      polishedCtx.shadowBlur = 8;
-      polishedCtx.drawImage(trimmedCanvas, padding, padding);
+      polishedCtx.shadowBlur = 12; // Beautiful glow blur
+      
+      // Draw the scaled character centered
+      polishedCtx.drawImage(trimmedCanvas, 0, 0, cropW, cropH, padding, padding, fitW, fitH);
 
       resolve({
         canvas: polishedCanvas,

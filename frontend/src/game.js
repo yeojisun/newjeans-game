@@ -83,12 +83,9 @@ export class GameEngine {
       hitAnimTimer: 0
     };
 
-    // Keep aspect ratio of the extracted character sprite
-    if (this.character && this.character.canvas) {
-      const ratio = this.character.canvas.width / this.character.canvas.height;
-      this.player.width = 65 * Math.min(1.2, Math.max(0.8, ratio));
-      this.player.height = 65;
-    }
+    // Set a uniform 65x65 hitbox for all characters to ensure fair and consistent gameplay
+    this.player.width = 65;
+    this.player.height = 65;
 
     // Entities
     this.projectiles = [];
@@ -1454,11 +1451,20 @@ export class GameEngine {
           spriteCanvas = this.character.cheerCanvas;
         }
 
-        // Use a consistent scale factor based on the character's default standing height (65px)
-        // to prevent sprites from stretching or shrinking unnaturally across different states.
-        const baseScale = 65 / this.character.height;
-        const drawWidth = spriteCanvas.width * baseScale;
-        const drawHeight = spriteCanvas.height * baseScale;
+        // Dynamically compute uniform draw sizes to keep all characters and states looking balanced and equal.
+        // Since all sprite canvases are normalized in extractor.js, fitting them all inside a 75x75 box
+        // preserves a perfectly constant physical scale for all characters, poses, and states.
+        const ratio = spriteCanvas.width / spriteCanvas.height;
+        let drawWidth, drawHeight;
+        const targetSize = 75;
+
+        if (ratio > 1) {
+          drawWidth = targetSize;
+          drawHeight = targetSize / ratio;
+        } else {
+          drawHeight = targetSize;
+          drawWidth = targetSize * ratio;
+        }
 
         // Apply hit flashing red filter if in hit animation state
         if (this.player.hitAnimTimer > 0) {
@@ -1570,9 +1576,16 @@ export class GameEngine {
         this.ctx.globalAlpha = 0.3;
         if (this.character.canvas) {
           const trailCanvas = this.character.flyCanvas || this.character.canvas;
-          const baseScale = 65 / this.character.height;
-          const trailW = trailCanvas.width * baseScale;
-          const trailH = trailCanvas.height * baseScale;
+          const ratio = trailCanvas.width / trailCanvas.height;
+          let trailW, trailH;
+          const targetSize = 75;
+          if (ratio > 1) {
+            trailW = targetSize;
+            trailH = targetSize / ratio;
+          } else {
+            trailH = targetSize;
+            trailW = targetSize * ratio;
+          }
           
           this.ctx.shadowColor = '#06b6d4';
           this.ctx.shadowBlur = 15;
