@@ -115,30 +115,8 @@ function processSingleCanvas(src, color) {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0);
 
-      // Remove white background
-      const imgData = ctx.getImageData(0, 0, w, h);
-      const pixels = imgData.data;
-
-      for (let i = 0; i < pixels.length; i += 4) {
-        const r = pixels[i];
-        const g = pixels[i + 1];
-        const b = pixels[i + 2];
-        const avg = (r + g + b) / 3;
-
-        // Turn white/near-white transparent
-        if (r > 225 && g > 225 && b > 225) {
-          const minBound = 205;
-          const maxBound = 235;
-          if (avg >= maxBound) {
-            pixels[i + 3] = 0; // Transparent
-          } else if (avg > minBound) {
-            // Smooth edge transition
-            const ratio = (maxBound - avg) / (maxBound - minBound);
-            pixels[i + 3] = Math.floor(ratio * 255);
-          }
-        }
-      }
-      ctx.putImageData(imgData, 0, 0);
+      // Remove white background (no longer needed because we pre-process sprites on disk to be transparent)
+      // This preserves original white fills inside the drawings (socks, eyes, shoes).
 
       // Auto-trim transparent borders
       let minX = w;

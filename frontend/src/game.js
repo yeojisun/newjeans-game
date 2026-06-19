@@ -1454,10 +1454,11 @@ export class GameEngine {
           spriteCanvas = this.character.cheerCanvas;
         }
 
-        // Dynamically compute width to preserve the active sprite's aspect ratio
-        const currentRatio = spriteCanvas.width / spriteCanvas.height;
-        const drawHeight = 65;
-        const drawWidth = 65 * currentRatio;
+        // Use a consistent scale factor based on the character's default standing height (65px)
+        // to prevent sprites from stretching or shrinking unnaturally across different states.
+        const baseScale = 65 / this.character.height;
+        const drawWidth = spriteCanvas.width * baseScale;
+        const drawHeight = spriteCanvas.height * baseScale;
 
         // Apply hit flashing red filter if in hit animation state
         if (this.player.hitAnimTimer > 0) {
@@ -1569,12 +1570,16 @@ export class GameEngine {
         this.ctx.globalAlpha = 0.3;
         if (this.character.canvas) {
           const trailCanvas = this.character.flyCanvas || this.character.canvas;
+          const baseScale = 65 / this.character.height;
+          const trailW = trailCanvas.width * baseScale;
+          const trailH = trailCanvas.height * baseScale;
+          
           this.ctx.shadowColor = '#06b6d4';
           this.ctx.shadowBlur = 15;
-          this.ctx.drawImage(trailCanvas, this.player.x - 30, this.player.y, this.player.width, this.player.height);
+          this.ctx.drawImage(trailCanvas, this.player.x - 30 + (this.player.width - trailW) / 2, this.player.y + (this.player.height - trailH) / 2, trailW, trailH);
           this.ctx.shadowColor = '#ec4899';
           this.ctx.shadowBlur = 15;
-          this.ctx.drawImage(trailCanvas, this.player.x - 60, this.player.y, this.player.width, this.player.height);
+          this.ctx.drawImage(trailCanvas, this.player.x - 60 + (this.player.width - trailW) / 2, this.player.y + (this.player.height - trailH) / 2, trailW, trailH);
         }
         this.ctx.restore();
       }
