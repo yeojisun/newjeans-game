@@ -29,6 +29,7 @@ import hitHanni from './assets/hit_hanni.png';
 import flyHyein from './assets/fly_hyein.png';
 import flyDanielle from './assets/fly_danielle.png';
 import flyHanni from './assets/fly_hanni.png';
+import flyMinji from './assets/fly_minji.png';
 
 
 const CHARACTERS_META = [
@@ -78,6 +79,7 @@ const CHARACTERS_META = [
     skillName: 'CD Shield',
     skillDesc: '장애물 충돌을 1회 막아주는 회전하는 CD 보호막을 생성합니다.',
     src: spriteMinji,
+    flySrc: flyMinji,
     cheerSrc: cheerMinji,
     attackSrc: attackMinji
   },

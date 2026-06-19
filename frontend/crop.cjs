@@ -74,10 +74,30 @@ function removeBackgroundDirect(image, threshold = 60) {
   const h = image.bitmap.height;
   const data = image.bitmap.data;
   
-  // Sample background color at (0, 0)
-  const bgR = data[0];
-  const bgG = data[1];
-  const bgB = data[2];
+  // Sample background color. Look for a light off-white/beige pixel near the top corner
+  let bgR = data[0];
+  let bgG = data[1];
+  let bgB = data[2];
+  
+  if (bgR < 180 || bgG < 180 || bgB < 180) {
+    let found = false;
+    for (let dy = 0; dy < 30; dy++) {
+      for (let dx = 0; dx < 30; dx++) {
+        const idx = (dy * w + dx) * 4;
+        const r = data[idx];
+        const g = data[idx + 1];
+        const b = data[idx + 2];
+        if (r > 200 && g > 200 && b > 200) {
+          bgR = r;
+          bgG = g;
+          bgB = b;
+          found = true;
+          break;
+        }
+      }
+      if (found) break;
+    }
+  }
   
   console.log(`Sampling background color: RGB(${bgR}, ${bgG}, ${bgB})`);
 
@@ -299,6 +319,30 @@ async function cropAll() {
   removeBackgroundDirect(hanniHit);
   await hanniHit.write(path.join(destDir, 'hit_hanni.png'));
   console.log('Saved hit_hanni.png');
+
+  console.log('Loading individual Minji main sprite...');
+  const minjiSprite = await Jimp.read('C:/Users/jisun.yeo/.gemini/antigravity/brain/71e6e127-5b58-4134-b553-f1a41d12ff3e/media__1781768383834.png');
+  removeBackgroundDirect(minjiSprite);
+  await minjiSprite.write(path.join(destDir, 'sprite_minji.png'));
+  console.log('Saved sprite_minji.png');
+
+  console.log('Loading individual Minji cheer sprite...');
+  const minjiCheer = await Jimp.read('C:/Users/jisun.yeo/.gemini/antigravity/brain/71e6e127-5b58-4134-b553-f1a41d12ff3e/media__1781768393716.png');
+  removeBackgroundDirect(minjiCheer);
+  await minjiCheer.write(path.join(destDir, 'cheer_minji.png'));
+  console.log('Saved cheer_minji.png');
+
+  console.log('Loading individual Minji fly sprite...');
+  const minjiFly = await Jimp.read('C:/Users/jisun.yeo/.gemini/antigravity/brain/71e6e127-5b58-4134-b553-f1a41d12ff3e/media__1781768406055.png');
+  removeBackgroundDirect(minjiFly);
+  await minjiFly.write(path.join(destDir, 'fly_minji.png'));
+  console.log('Saved fly_minji.png');
+
+  console.log('Loading individual Minji attack sprite...');
+  const minjiAttack = await Jimp.read('C:/Users/jisun.yeo/.gemini/antigravity/brain/71e6e127-5b58-4134-b553-f1a41d12ff3e/media__1781768416869.png');
+  removeBackgroundDirect(minjiAttack);
+  await minjiAttack.write(path.join(destDir, 'attack_minji.png'));
+  console.log('Saved attack_minji.png');
 
   console.log('All crops and background transparentization completed successfully!');
 }
