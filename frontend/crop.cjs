@@ -321,7 +321,7 @@ async function cropAll() {
   console.log('Saved hit_hanni.png');
 
   console.log('Loading individual Minji main sprite...');
-  const minjiSprite = await Jimp.read('C:/Users/jisun.yeo/.gemini/antigravity/brain/71e6e127-5b58-4134-b553-f1a41d12ff3e/media__1781768383834.png');
+  const minjiSprite = await Jimp.read('C:/Users/jisun.yeo/.gemini/antigravity/brain/71e6e127-5b58-4134-b553-f1a41d12ff3e/media__1781829480368.png');
   removeBackgroundDirect(minjiSprite);
   await minjiSprite.write(path.join(destDir, 'sprite_minji.png'));
   console.log('Saved sprite_minji.png');
